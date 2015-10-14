@@ -96,6 +96,14 @@ public class Game extends JPanel {
 		rect = new Rectangle(rect.x, rect.y, rect.width - rect.x, rect.height - rect.y);
 		return rect;
 	}
+	
+	public void lookAtBlock(Point block) {
+		world.getUtil().Log("Looking at " + block.x + ", " + block.y + ".");
+		int pixelX = block.x * VisualDefinitions.BLOCK_WIDTH;
+		int pixelY = block.y * VisualDefinitions.BLOCK_HEIGHT;
+		viewport = new Rectangle(pixelX - (this.getWidth() / 2), pixelY - (this.getHeight() / 2), this.getWidth(), this.getHeight());
+	}
+
 
 	public void setViewport(Rectangle viewport) {
 		this.viewport = viewport;
@@ -112,6 +120,8 @@ public class Game extends JPanel {
 		if (viewport == null) {
 			viewport = new Rectangle(0, 0, this.getWidth(), this.getHeight());
 			previousViewport = new Rectangle(-1, -1, -1, -1);
+			
+			lookAtBlock(new Point(world.getWidth() / 2, world.getHeight() / 2));
 		}
 
 		if (world.isGenerated()) {
@@ -144,9 +154,11 @@ public class Game extends JPanel {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
 		FontMetrics fm = g.getFontMetrics();
+		
+		Rectangle blockViewport = convertViewportToBlocks(viewport);
 
 		if (!previousViewport.equals(convertViewportToBlocks(viewport))) {
-			drawData = world.getViewportData(convertViewportToBlocks(viewport));
+			drawData = world.getViewportData(blockViewport);
 			previousViewport = convertViewportToBlocks(viewport);
 		}
 
@@ -228,8 +240,8 @@ public class Game extends JPanel {
 								offsetY + (y * VisualDefinitions.BLOCK_HEIGHT),
 								VisualDefinitions.BLOCK_WIDTH, 
 								VisualDefinitions.BLOCK_HEIGHT);
-						cursorText = "(" + (x - 1) + ", " + (y - 1) + ") " + drawData[x - 1][y - 1].getBlockID().toString().replace(
-								'_', ' ');
+//						cursorText = "(" + (blockViewport.x + (x - 1)) + ", " + (blockViewport.y + (y - 1)) + ") " + drawData[x][y].getBlockID().toString().replace(
+//								'_', ' ');
 					}
 				}
 			}

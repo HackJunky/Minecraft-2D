@@ -16,12 +16,14 @@ public class Chunk implements Serializable{
 	int LAYER_START_Y;
 	int LAYER_END_Y;
 
-	static int WORLD_OCEAN_LEVEL = 72;
+	static int WORLD_OCEAN_LEVEL = 128;
 	static float ORE_SPAWN_CHANCE = 0.50f;
 	static int ORE_PATTERN_SIZE = 3;
 	static double POCKET_SIZE_MAX_SCALAR = 2;
 	static int CAVE_MAX_SIZE = 15;
 	static int SLOPE_MAX_HEIGHT = 6;
+	static int SLOPE_START_Y = 0;
+	static int SLOPE_END_Y = 0;
 	static boolean IS_LOWEST = false;
 
 	private Block[][] data;
@@ -31,18 +33,21 @@ public class Chunk implements Serializable{
 
 	private String CHUNK_ID;
 
-	public Chunk(int blocksWide, int blocksHigh, World world, int chunkX, int chunkY, int startY, int endY) {
+	public Chunk(int blocksWide, int blocksHigh, World world, int chunkX, int chunkY, int startY, int endY, int slopeStart, int slopeEnd, int oceanLevel) {
 		CHUNK_WIDTH = blocksWide;
 		CHUNK_HEIGHT = blocksHigh;
 		CHUNK_X = chunkX;
 		CHUNK_Y = chunkY;
 		LAYER_START_Y = startY;
 		LAYER_END_Y = endY;
+		SLOPE_START_Y = slopeStart;
+		SLOPE_END_Y = slopeEnd;
+		WORLD_OCEAN_LEVEL = oceanLevel;
 		this.world = world;
 
 		CHUNK_ID = UUID.randomUUID().toString();
 
-		world.getUtil().Log("Registering chunk '" + CHUNK_ID + "' for layers " + LAYER_START_Y + " to " + LAYER_END_Y + "...");
+		//world.getUtil().Log("Registering chunk '" + CHUNK_ID + "' for layers " + LAYER_START_Y + " to " + LAYER_END_Y + "...");
 	}
 
 	public void tick() {
@@ -223,12 +228,9 @@ public class Chunk implements Serializable{
 
 	private void generateFeatures() {
 		Random rand = new Random();
-		int STEP_CHANGE = 2;
-		int HEIGHT_START = (SLOPE_MAX_HEIGHT / 3) + rand.nextInt(SLOPE_MAX_HEIGHT);
 
-		int slope = rand.nextInt(STEP_CHANGE);
-		int height = HEIGHT_START;
-
+		int slope = 1;
+		int height = SLOPE_START_Y;
 
 		if (WORLD_OCEAN_LEVEL < LAYER_END_Y && WORLD_OCEAN_LEVEL > LAYER_START_Y) {
 			for (int x = 0; x < data.length; x++) {
@@ -240,15 +242,38 @@ public class Chunk implements Serializable{
 					height -= slope;
 				}
 				if (stoneHeight > 0) {
-					for (int y = stoneHeight - height; y <= stoneHeight + height; y++) {
-						if (y > 0) {
-							if (y == stoneHeight - height) {
+					int bottom = stoneHeight - rand.nextInt(Math.abs(SLOPE_MAX_HEIGHT) + 1);
+					int top = stoneHeight + Math.abs(SLOPE_MAX_HEIGHT - height);
+					int difference = top - SLOPE_END_Y;
+
+					int deltaBlocks = Math.abs(difference) / (data.length - x);
+					if (deltaBlocks >= 1) {
+						if (difference > 0) {
+							height -= slope;
+						}else if (difference < 0) {
+							height += slope;
+						}
+					}
+
+					for (int y = bottom; y <= top; y++) {
+						if (y > 0 && y < data[0].length) {
+							if (y == top) {
 								data[x][y] = new Block(Block.BlockID.Grass);
-							}else if (y <= stoneHeight) {
-								data[x][y] = new Block(Block.BlockID.Stone);
 							}else {
 								data[x][y] = new Block(Block.BlockID.Dirt);
 							}
+						}
+					}
+					for (int y = bottom; y <= top; y++) {
+						if (y > 0 && y < data[0].length) {
+							if (data[x][y].getBlockID().equals(Block.BlockID.Air)) {
+								data[x][y] = new Block(Block.BlockID.Stone);
+							}
+						}
+					}
+					for (int y = stoneHeight; y <= bottom + (top - bottom - SLOPE_MAX_HEIGHT); y++) {
+						if (y > 0 && y < data[0].length) {
+							data[x][y] = new Block(Block.BlockID.Stone);
 						}
 					}
 				}
@@ -256,6 +281,10 @@ public class Chunk implements Serializable{
 		}
 
 		generationStage++;
+	}
+
+	private void generateLight() {
+		
 	}
 
 	public boolean isGenerated() {
