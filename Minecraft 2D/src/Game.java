@@ -1,6 +1,7 @@
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -22,13 +23,16 @@ public class Game extends JPanel {
 
 	private boolean drawDebug = false;
 
+	private Block[][] drawData;
+	private Rectangle previousViewport;
+	
 	private ArrayList<Image> textures;
 	
 	private static class VisualDefinitions {
 		private static int BLOCK_WIDTH = 24;
 		private static int BLOCK_HEIGHT = 24;
 		private static String TEXTURE_PATH_PREFIX = "textures/";
-		private static int CAM_PAN_SPEED = 1;
+		private static int CAM_PAN_SPEED = 5;
 	}
 
 	static {
@@ -85,10 +89,12 @@ public class Game extends JPanel {
 	}
 
 	public Rectangle convertViewportToBlocks(Rectangle view) {
-		return new Rectangle((view.x / VisualDefinitions.BLOCK_WIDTH), 
+		Rectangle rect = new Rectangle((view.x / VisualDefinitions.BLOCK_WIDTH), 
 				(view.y / VisualDefinitions.BLOCK_HEIGHT), 
 				(view.width / VisualDefinitions.BLOCK_WIDTH),
 				(view.height / VisualDefinitions.BLOCK_HEIGHT));
+		rect = new Rectangle(rect.x, rect.y, rect.width - rect.x, rect.height - rect.y);
+		return rect;
 	}
 
 	public void setViewport(Rectangle viewport) {
@@ -105,6 +111,7 @@ public class Game extends JPanel {
 	public void render(Graphics2D g2d) {
 		if (viewport == null) {
 			viewport = new Rectangle(0, 0, this.getWidth(), this.getHeight());
+			previousViewport = new Rectangle(-1, -1, -1, -1);
 		}
 
 		if (world.isGenerated()) {
@@ -136,8 +143,12 @@ public class Game extends JPanel {
 	public void drawWorld(Graphics2D g) {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
+		FontMetrics fm = g.getFontMetrics();
 
-		Block[][] drawData = world.getViewportData(convertViewportToBlocks(viewport));
+		if (!previousViewport.equals(convertViewportToBlocks(viewport))) {
+			drawData = world.getViewportData(convertViewportToBlocks(viewport));
+			previousViewport = convertViewportToBlocks(viewport);
+		}
 
 		int blockWidth = (viewport.width / VisualDefinitions.BLOCK_WIDTH);
 		int blockHeight = (viewport.height / VisualDefinitions.BLOCK_HEIGHT);
@@ -149,9 +160,10 @@ public class Game extends JPanel {
 		Point block = null;
 		if (cursor != null) {
 			SwingUtilities.convertPointFromScreen(cursor, ui);
-			block = new Point((cursor.x - offsetX) / VisualDefinitions.BLOCK_WIDTH, ((cursor.y - offsetY) / VisualDefinitions.BLOCK_HEIGHT) + 1);
+			block = new Point((cursor.x - offsetX) / VisualDefinitions.BLOCK_WIDTH, ((cursor.y - offsetY) / VisualDefinitions.BLOCK_HEIGHT));
 		}
 		Rectangle cursorRect = null;
+		String cursorText = "Void";
 		for (int y = 0; y < drawData[0].length; y++) {
 			if (drawData[0][y] == null) {
 				g.setColor(Color.BLACK);
@@ -216,6 +228,8 @@ public class Game extends JPanel {
 								offsetY + (y * VisualDefinitions.BLOCK_HEIGHT),
 								VisualDefinitions.BLOCK_WIDTH, 
 								VisualDefinitions.BLOCK_HEIGHT);
+						cursorText = "(" + (x - 1) + ", " + (y - 1) + ") " + drawData[x - 1][y - 1].getBlockID().toString().replace(
+								'_', ' ');
 					}
 				}
 			}
@@ -224,14 +238,15 @@ public class Game extends JPanel {
 		if (cursorRect != null) {
 			g.setStroke(new BasicStroke(1));
 			g.drawRect(cursorRect.x, cursorRect.y, cursorRect.width, cursorRect.height);
+			g.drawString(cursorText, cursorRect.x + cursorRect.width + (cursorRect.width / 3), cursorRect.y - fm.getHeight());
 			g.setStroke(originalStroke);
 		}
 
 		if (cursor != null) {
 			int leftRight = 0;
-			if (cursor.x < ui.getLocation().x + 5) {
+			if (cursor.x < ui.getLocation().x + VisualDefinitions.BLOCK_HEIGHT) {
 				leftRight = -1;
-			}else if (cursor.x > ui.getLocation().x + this.getWidth() - 5) {
+			}else if (cursor.x > ui.getLocation().x + ui.getWidth() - VisualDefinitions.BLOCK_HEIGHT) {
 				leftRight = 1;
 			}
 
@@ -242,9 +257,9 @@ public class Game extends JPanel {
 			}
 
 			int upDown = 0;
-			if (cursor.y < ui.getLocation().y - 5) {
+			if (cursor.y < ui.getLocation().y + VisualDefinitions.BLOCK_HEIGHT) {
 				upDown = -1;
-			}else if (cursor.y > ui.getLocation().y + ui.getHeight() - VisualDefinitions.BLOCK_HEIGHT - 5) {
+			}else if (cursor.y > ui.getLocation().y + ui.getHeight() - VisualDefinitions.BLOCK_HEIGHT) {
 				upDown = 1;
 			}
 

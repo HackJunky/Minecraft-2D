@@ -56,6 +56,7 @@ public class World {
 	}
 
 	public Block[][] getViewportData(Rectangle blockViewport) {
+		//System.out.println("Requesting viewport " + blockViewport.x + ", " + blockViewport.y + ", " + blockViewport.width + ", " + blockViewport.height);
 		Block[][] output = new Block[blockViewport.width + 1][blockViewport.height + 1];
 		for (int x = 0; x < blockViewport.width + 1; x++) {
 			int xInverse = blockViewport.width - x;

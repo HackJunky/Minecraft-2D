@@ -225,12 +225,12 @@ public class Chunk implements Serializable{
 		Random rand = new Random();
 		int STEP_CHANGE = 2;
 		int HEIGHT_START = (SLOPE_MAX_HEIGHT / 3) + rand.nextInt(SLOPE_MAX_HEIGHT);
-		
+
 		int slope = rand.nextInt(STEP_CHANGE);
 		int height = HEIGHT_START;
 
 		int stoneHeight = 0;
-		
+
 		for (int x = 0; x < data.length; x++) {
 			for (int y = 0; y < data[0].length; y++) {
 				if (data[x][y].getBlockID().equals(Block.BlockID.Stone)) {
@@ -245,14 +245,15 @@ public class Chunk implements Serializable{
 				height -= slope;
 			}
 			if (stoneHeight > 0) {
-				System.out.println("test");
-				for (int y = stoneHeight - (height - rand.nextInt(height / 3)); y <= stoneHeight + height; y++) {
-					if (y == stoneHeight - height) {
-						data[x][y] = new Block(Block.BlockID.Grass);
-					}else if (y <= stoneHeight) {
-						data[x][y] = new Block(Block.BlockID.Stone);
-					}else {
-						data[x][y] = new Block(Block.BlockID.Dirt);
+				for (int y = stoneHeight - height; y <= stoneHeight + height; y++) {
+					if (y > 0) {
+						if (y == stoneHeight - height) {
+							data[x][y] = new Block(Block.BlockID.Grass);
+						}else if (y <= stoneHeight) {
+							data[x][y] = new Block(Block.BlockID.Stone);
+						}else {
+							data[x][y] = new Block(Block.BlockID.Dirt);
+						}
 					}
 				}
 			}
