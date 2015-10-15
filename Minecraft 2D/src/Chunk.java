@@ -3,9 +3,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
+
 public class Chunk implements Serializable{
 	private static final long serialVersionUID = 7421916881162189998L;
-	private World world;
 
 	static int CHUNK_X;
 	static int CHUNK_Y;
@@ -16,14 +16,14 @@ public class Chunk implements Serializable{
 	int LAYER_START_Y;
 	int LAYER_END_Y;
 
-	static int WORLD_OCEAN_LEVEL = 128;
-	static float ORE_SPAWN_CHANCE = 0.50f;
-	static int ORE_PATTERN_SIZE = 3;
-	static double POCKET_SIZE_MAX_SCALAR = 2;
-	static int CAVE_MAX_SIZE = 15;
+	private int WORLD_OCEAN_LEVEL = 128;
+	private float ORE_SPAWN_CHANCE = 0.50f;
+	private int ORE_PATTERN_SIZE = 3;
+	private double POCKET_SIZE_MAX_SCALAR = 2;
+	private int CAVE_MAX_SIZE = 15;
 	static int SLOPE_MAX_HEIGHT = 5;
 	private int[] WORLD_TOPOGRAPHY;
-	static boolean IS_LOWEST = false;
+	private boolean IS_LOWEST = false;
 
 	private Block[][] data;
 
@@ -32,7 +32,7 @@ public class Chunk implements Serializable{
 
 	private String CHUNK_ID;
 
-	public Chunk(int blocksWide, int blocksHigh, World world, int chunkX, int chunkY, int startY, int endY, int[] topography, int oceanLevel) {
+	public Chunk(int blocksWide, int blocksHigh, int chunkX, int chunkY, int startY, int endY, int[] topography, int oceanLevel) {
 		CHUNK_WIDTH = blocksWide;
 		CHUNK_HEIGHT = blocksHigh;
 		CHUNK_X = chunkX;
@@ -41,7 +41,6 @@ public class Chunk implements Serializable{
 		LAYER_END_Y = endY;
 		WORLD_OCEAN_LEVEL = oceanLevel;
 		WORLD_TOPOGRAPHY = topography;
-		this.world = world;
 
 		CHUNK_ID = UUID.randomUUID().toString();
 
@@ -75,6 +74,10 @@ public class Chunk implements Serializable{
 		}
 	}
 
+	public void setLowest(boolean b) {
+		IS_LOWEST = b;
+	}
+	
 	public Block[][] getData() {
 		return data;
 	}

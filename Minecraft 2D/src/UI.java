@@ -41,7 +41,8 @@ public class UI extends JFrame{
 		this.setVisible(true);
 		
 		gameRenderer = new Game(world = new World(false, 100, 6, 64, 64, util), this);
-		client = new Client(world);
+		client = new Client(world, gameRenderer);
+		
 		getContentPane().add(gameRenderer, BorderLayout.CENTER);
 		
 		this.validate();

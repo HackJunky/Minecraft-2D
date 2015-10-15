@@ -1,6 +1,10 @@
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -9,6 +13,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Random;
 
 import javax.swing.Timer;
@@ -18,14 +23,16 @@ public class Server {
 	private Thread netMasterThread;
 	private Timer eventTicker;
 	private EventHandler eventHandler;
-	
-	
+
+	private Thread renderer;
 
 	private static int NETWORK_MAX_CONNECTIONS = 16;
 	private static int NETWORK_PORT = 7767;
 	private static int SERVER_VERSION = 1;
 
-	World world;
+	private World world;
+	
+	private ArrayList<Packet.Modification> modifications;
 
 	enum ThreadNames {
 		Bashful, Doc, Dopey, Grumpy, Happy, Sleepy, Sneezy
@@ -37,8 +44,12 @@ public class Server {
 
 	public Server() {
 		netMaster = new NetworkMaster();
+		modifications = new ArrayList<Packet.Modification>();
 		world = new World(true, 100, 6, 64, 64, new Util());
 		world.getUtil().Log("Initializing server...");
+
+		renderer = new Thread(new Renderer());
+		renderer.start();
 
 		netMasterThread = new Thread(netMaster);
 		netMasterThread.start();
@@ -182,6 +193,12 @@ public class Server {
 			}
 		}
 	}
+	
+	synchronized public ArrayList<Packet.Modification> getChanges() {
+		ArrayList<Packet.Modification> m = modifications;
+		modifications = new ArrayList<Packet.Modification>();
+		return m;
+	}
 
 	public class NetworkSocket implements Runnable {
 		private String name;
@@ -213,8 +230,9 @@ public class Server {
 
 			while(active) {
 				try {
-					oos = new ObjectOutputStream(server.getOutputStream());
-					ois = new ObjectInputStream(server.getInputStream());
+					oos = new ObjectOutputStream(new BufferedOutputStream(server.getOutputStream()));
+					oos.flush();
+					ois = new ObjectInputStream(new BufferedInputStream(server.getInputStream()));
 
 					out = new DataOutputStream(server.getOutputStream());
 					in = new DataInputStream(server.getInputStream());
@@ -255,19 +273,31 @@ public class Server {
 										break;
 									}
 									if (identification.startsWith("$IDENTIFY")) {
-										username = identification.substring("$IDENTIFY".length(), identification.length());
+										username = identification.substring("$IDENTIFY ".length(), identification.length());
+										out.writeUTF("$VALID");
+										world.getUtil().Log("Sending world data...");
+										verified = true;
 									}
 								}
 
 								if (verified) {	
 									boolean done = false;
-
+									
+									oos.writeObject(world.getChunkData());
+									
+									world.getUtil().Log("Ready! Awaiting next connection...");
+									
 									while (!done) {
 										try {
-											oos.writeObject(world.getChunkData());
-											world.setChunkData((Chunk[][])ois.readObject());
+											Packet outgoing = new Packet(world.isGenerated());
+											outgoing.setChanges(getChanges());
+											oos.writeObject(outgoing);
+											oos.flush();
+											Packet incoming = (Packet)ois.readObject();
+											world.setGenerated(incoming.getState());
+											world.applyChanges(incoming.getChanges());
 										}catch (Exception e) {
-											world.getUtil().Log("Forcing premature termination of the thread.");
+											world.getUtil().Log(username + " disconnected: Error.");
 											break;
 										}
 									}
@@ -287,10 +317,10 @@ public class Server {
 						world.getUtil().Log("MISMATCH! Client is version " + remoteVersion + " but we are version " + SERVER_VERSION + "! Closing the Server!");
 					}
 				}catch(SocketTimeoutException s) {
-					System.out.println("[" + name + "] The socket has timed out and been reset.");
+					System.out.println(username + " has timed out, and disconnected.");
 					break;
 				}catch(IOException e) {
-					world.getUtil().Log("[" + name + "] has been terminated by the remote client.");
+					world.getUtil().Log(username + " has disconnected.");
 					//e.printStackTrace();
 					break;
 				}

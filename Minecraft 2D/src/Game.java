@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -31,11 +32,13 @@ public class Game extends JPanel {
 
 	private Block[][] drawData;
 	private Rectangle previousViewport;
-	
+
 	private ArrayList<BufferedImage> textures;
 	RenderingHints renderHints;
 	Composite translucent;
 	
+	private ArrayList<Packet.Modification> modifications;
+
 	private static class VisualDefinitions {
 		private static int BLOCK_WIDTH = 24;
 		private static int BLOCK_HEIGHT = 24;
@@ -56,10 +59,11 @@ public class Game extends JPanel {
 		this.ui = ui;
 		loadImages();
 
-		new Thread(new Renderer()).start();
-
-		this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
-		this.setVisible(true);
+		if (world.isGenerated()) {
+			new Thread(new Renderer()).start();
+			this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+			this.setVisible(true);
+		}
 	}
 
 	public void loadImages() {
@@ -79,7 +83,7 @@ public class Game extends JPanel {
 		}
 		world.getUtil().Log("Pre-load completed in " + (System.currentTimeMillis() - startTime) + " ms.");
 	}
-	
+
 	public BufferedImage toBufferedImage(Image img) {
 		try {
 			if (img instanceof BufferedImage) {
@@ -94,6 +98,10 @@ public class Game extends JPanel {
 			world.getUtil().Log("Could not buffer one or more textures!");
 			return null;
 		}
+	}
+	
+	public ArrayList<Packet.Modification> getChanges() {
+		return modifications;
 	}
 
 	public void viewLeft() {
@@ -120,7 +128,7 @@ public class Game extends JPanel {
 		rect = new Rectangle(rect.x, rect.y, rect.width - rect.x, rect.height - rect.y);
 		return rect;
 	}
-	
+
 	public void lookAtBlock(Point block) {
 		world.getUtil().Log("Looking at " + block.x + ", " + block.y + ".");
 		int pixelX = block.x * VisualDefinitions.BLOCK_WIDTH;
@@ -144,14 +152,14 @@ public class Game extends JPanel {
 		if (viewport == null) {
 			viewport = new Rectangle(0, 0, this.getWidth(), this.getHeight());
 			previousViewport = new Rectangle(-1, -1, -1, -1);
-			
+
 			lookAtBlock(new Point(world.getWidth() / 2, world.getHeight() / 2 + (Chunk.CHUNK_HEIGHT / 2)));
 			renderHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		}
 
 		if (world.isGenerated()) {
 			g2d.setRenderingHints(renderHints);
-			
+
 			if (drawDebug) {
 				drawDebug(g2d);
 			}
@@ -181,7 +189,7 @@ public class Game extends JPanel {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
 		FontMetrics fm = g.getFontMetrics();
-		
+
 		Rectangle blockViewport = convertViewportToBlocks(viewport);
 
 		if (!previousViewport.equals(convertViewportToBlocks(viewport))) {
@@ -194,7 +202,7 @@ public class Game extends JPanel {
 
 		int offsetX = viewport.width - (blockWidth * VisualDefinitions.BLOCK_WIDTH);
 		int offsetY = viewport.height - (blockHeight * VisualDefinitions.BLOCK_HEIGHT);
-		
+
 		Point cursor = ui.getMousePosition();
 		Point block = null;
 		if (cursor != null) {
@@ -267,8 +275,8 @@ public class Game extends JPanel {
 								offsetY + (y * VisualDefinitions.BLOCK_HEIGHT),
 								VisualDefinitions.BLOCK_WIDTH, 
 								VisualDefinitions.BLOCK_HEIGHT);
-//						cursorText = "(" + (blockViewport.x + (x - 1)) + ", " + (blockViewport.y + (y - 1)) + ") " + drawData[x][y].getBlockID().toString().replace(
-//								'_', ' ');
+						//						cursorText = "(" + (blockViewport.x + (x - 1)) + ", " + (blockViewport.y + (y - 1)) + ") " + drawData[x][y].getBlockID().toString().replace(
+						//								'_', ' ');
 					}
 				}
 			}

@@ -1,8 +1,11 @@
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Random;
 
-public class World {
+public class World implements Serializable {
+	private static final long serialVersionUID = 5471323799966531710L;
 	private Chunk[][] world;
 	private Util util;
 
@@ -78,9 +81,24 @@ public class World {
 		}
 		return output;
 	}
+	
+	synchronized public void applyChanges(ArrayList<Packet.Modification> mods) {
+		for (int i = 0; i < mods.size(); i++) {
+			Packet.Modification mod = mods.get(i);
+			setBlock(mod.getPoint(), mod.getBlock());
+		}
+	}
+	
+	public void setBlock(Point block, Block data) {
+		
+	}
 
 	public boolean isGenerated() {
 		return generated;
+	}
+
+	public void setGenerated(boolean b) {
+		generated = b;
 	}
 
 	public Block getBlockByCoords(Point block) {
@@ -102,6 +120,10 @@ public class World {
 	}
 	
 	synchronized public void setChunkData(Chunk[][] data) {
+		if (this.world == null) {
+			util.Log("World data retreived, welcome to the game!");
+		}
+		generated = true;
 		world = data;
 	}
 
@@ -121,15 +143,15 @@ public class World {
 					if (oceanLevel < endY && oceanLevel > startY) {
 						chunkMap = splitArray(topography, x * CHUNK_WIDTH, (x * CHUNK_WIDTH) + CHUNK_WIDTH);
 					}
-					world[x][y] = new Chunk(CHUNK_WIDTH, 
-							CHUNK_HEIGHT,
-							this, x, y, 
+					world[x][y] = new Chunk(
+							CHUNK_WIDTH, CHUNK_HEIGHT,
+							x, y, 
 							startY,
 							endY,
 							chunkMap,
 							oceanLevel);
 					if (endY == WORLD_HEIGHT * CHUNK_HEIGHT - 1) {
-						world[x][y].IS_LOWEST = true;
+						world[x][y].setLowest(true);
 					}
 				}
 			}
