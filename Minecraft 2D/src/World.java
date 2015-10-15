@@ -1,8 +1,6 @@
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.util.ArrayList;
 import java.util.Random;
-
 
 public class World {
 	private Chunk[][] world;
@@ -17,11 +15,17 @@ public class World {
 
 	long startTime;
 
-	public World(int chunksWide, int chunksHigh, int chunkWidth, int chunkHeight, Util util) {
+	int[] topography;
+
+	boolean isServer = true;
+
+	public World(boolean isServer, int chunksWide, int chunksHigh, int chunkWidth, int chunkHeight, Util util) {
 		WORLD_WIDTH = chunksWide;
 		WORLD_HEIGHT = chunksHigh;
 		CHUNK_WIDTH = chunkWidth;
 		CHUNK_HEIGHT = chunkHeight;
+		
+		this.isServer = isServer;
 
 		this.util = util;
 
@@ -31,10 +35,13 @@ public class World {
 	}
 
 	public void update() {
-		if (!generated) {
-			generateTerrain();
-		}else {
-
+		if (isServer) {
+			if (topography == null) {
+				topography = generateTopography(CHUNK_WIDTH * WORLD_WIDTH);
+			}
+			if (!generated) {
+				generateTerrain();
+			}
 		}
 	}
 
@@ -90,8 +97,12 @@ public class World {
 		return world[x][y];
 	}
 
-	public Chunk[][] getChunkData() {
+	synchronized public Chunk[][] getChunkData() {
 		return world;
+	}
+	
+	synchronized public void setChunkData(Chunk[][] data) {
+		world = data;
 	}
 
 	public void generateTerrain() {
@@ -100,19 +111,27 @@ public class World {
 		if (world == null) {
 			world = new Chunk[WORLD_WIDTH][WORLD_HEIGHT];
 		}
-		Random rand = new Random();
-		int previousSlope = (Chunk.SLOPE_MAX_HEIGHT / 2) + rand.nextInt(Chunk.SLOPE_MAX_HEIGHT);
+		int oceanLevel = ((WORLD_HEIGHT / 2) * CHUNK_HEIGHT) + (CHUNK_HEIGHT / 2);
 		for (int y = 0; y < world[0].length; y++) {
-			int nextSlope = (Chunk.SLOPE_MAX_HEIGHT / 2) + rand.nextInt(Chunk.SLOPE_MAX_HEIGHT);
+			int startY = y * CHUNK_HEIGHT;
+			int endY = startY + CHUNK_HEIGHT;
+			int[] chunkMap = null;
 			for (int x = 0; x < world.length; x++) {
 				if (world[x][y] == null) {
-					world[x][y] = new Chunk(CHUNK_WIDTH, CHUNK_HEIGHT, this, x, y, y * CHUNK_HEIGHT,  (y * CHUNK_HEIGHT) + CHUNK_HEIGHT, previousSlope, nextSlope, ((WORLD_HEIGHT / 2) * CHUNK_HEIGHT) + (CHUNK_HEIGHT / 3));
-					if ((y * CHUNK_HEIGHT) + CHUNK_HEIGHT == (world[0].length - 1 * CHUNK_HEIGHT) + CHUNK_HEIGHT) {
+					if (oceanLevel < endY && oceanLevel > startY) {
+						chunkMap = splitArray(topography, x * CHUNK_WIDTH, (x * CHUNK_WIDTH) + CHUNK_WIDTH);
+					}
+					world[x][y] = new Chunk(CHUNK_WIDTH, 
+							CHUNK_HEIGHT,
+							this, x, y, 
+							startY,
+							endY,
+							chunkMap,
+							oceanLevel);
+					if (endY == WORLD_HEIGHT * CHUNK_HEIGHT - 1) {
 						world[x][y].IS_LOWEST = true;
 					}
 				}
-				previousSlope = nextSlope;
-				nextSlope = (Chunk.SLOPE_MAX_HEIGHT / 2) + rand.nextInt(Chunk.SLOPE_MAX_HEIGHT);
 			}
 		}
 		for (int x = 0; x < world.length; x++) {
@@ -127,5 +146,43 @@ public class World {
 			generated = true;
 			util.Log((WORLD_WIDTH * CHUNK_WIDTH) + "x" + (WORLD_HEIGHT * CHUNK_HEIGHT) + " terrain built in " + (System.currentTimeMillis() - startTime) + "ms.");
 		}
+	}
+
+	public int[] splitArray(int[] arr, int start, int end) {
+		int[] output = new int[end - start];
+		int j = 0;
+		for (int i = start; i < end; i++) {
+			output[j] = arr[i];
+			j++;
+		}
+		return output;
+	}
+
+	public int[] generateTopography(int size) {
+		long start = System.currentTimeMillis();
+		Random r = new Random();
+		int[] output = new int[size];
+		int previous = 0;
+		for (int i = 0; i < size; i++) {
+			boolean a = r.nextBoolean();
+			boolean b = r.nextBoolean();
+			if (b) {
+				output[i] = previous;
+			}else {
+				if (a) {
+					if (previous - 1 >= 0) {
+						previous--;
+					}
+					output[i] = previous;
+				}else {
+					if (previous + 1 <= Chunk.SLOPE_MAX_HEIGHT) {
+						previous++;
+					}
+					output[i] = previous;
+				}
+			}
+		}
+		util.Log("Generated terrain map in " + (System.currentTimeMillis() - start) + " ms.");
+		return output;
 	}
 }

@@ -1,5 +1,7 @@
+import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Cursor;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -7,10 +9,14 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -26,7 +32,9 @@ public class Game extends JPanel {
 	private Block[][] drawData;
 	private Rectangle previousViewport;
 	
-	private ArrayList<Image> textures;
+	private ArrayList<BufferedImage> textures;
+	RenderingHints renderHints;
+	Composite translucent;
 	
 	private static class VisualDefinitions {
 		private static int BLOCK_WIDTH = 24;
@@ -57,12 +65,12 @@ public class Game extends JPanel {
 	public void loadImages() {
 		world.getUtil().Log("Pre-loading images into memory space...");
 		long startTime = System.currentTimeMillis();
-		textures = new ArrayList<Image>();
+		textures = new ArrayList<BufferedImage>();
 		Block.BlockID[] blocks = Block.BlockID.values();
 		for (int i = 0; i < blocks.length; i++) {
 			try {
 				textures.add(blocks[i].getID(), 
-						Toolkit.getDefaultToolkit().getImage(VisualDefinitions.TEXTURE_PATH_PREFIX + blocks[i].getTextureName()));
+						toBufferedImage(ImageIO.read(new File(VisualDefinitions.TEXTURE_PATH_PREFIX + blocks[i].getTextureName()))));
 			} catch (Exception e) {
 				textures.add(blocks[i].getID(), null);
 				world.getUtil().Log("Could not load " + blocks[i].getTextureName() + "!");
@@ -70,6 +78,22 @@ public class Game extends JPanel {
 			}
 		}
 		world.getUtil().Log("Pre-load completed in " + (System.currentTimeMillis() - startTime) + " ms.");
+	}
+	
+	public BufferedImage toBufferedImage(Image img) {
+		try {
+			if (img instanceof BufferedImage) {
+				return (BufferedImage) img;
+			}
+			BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+			Graphics2D bGr = bimage.createGraphics();
+			bGr.drawImage(img, 0, 0, null);
+			bGr.dispose();
+			return bimage;
+		}catch (Exception e) {
+			world.getUtil().Log("Could not buffer one or more textures!");
+			return null;
+		}
 	}
 
 	public void viewLeft() {
@@ -101,7 +125,7 @@ public class Game extends JPanel {
 		world.getUtil().Log("Looking at " + block.x + ", " + block.y + ".");
 		int pixelX = block.x * VisualDefinitions.BLOCK_WIDTH;
 		int pixelY = block.y * VisualDefinitions.BLOCK_HEIGHT;
-		viewport = new Rectangle(pixelX - (this.getWidth() / 2), pixelY - (this.getHeight() / 2), this.getWidth(), this.getHeight());
+		viewport = new Rectangle(pixelX - (this.getWidth() / 2), pixelY - (this.getHeight() / 2), pixelX + (this.getWidth() / 2), pixelY + (this.getHeight() / 2));
 	}
 
 
@@ -121,10 +145,13 @@ public class Game extends JPanel {
 			viewport = new Rectangle(0, 0, this.getWidth(), this.getHeight());
 			previousViewport = new Rectangle(-1, -1, -1, -1);
 			
-			lookAtBlock(new Point(world.getWidth() / 2, world.getHeight() / 2));
+			lookAtBlock(new Point(world.getWidth() / 2, world.getHeight() / 2 + (Chunk.CHUNK_HEIGHT / 2)));
+			renderHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		}
 
 		if (world.isGenerated()) {
+			g2d.setRenderingHints(renderHints);
+			
 			if (drawDebug) {
 				drawDebug(g2d);
 			}
@@ -185,7 +212,7 @@ public class Game extends JPanel {
 						VisualDefinitions.BLOCK_HEIGHT);
 				g.setColor(originalColor);
 			}else {
-				Image tex = textures.get(drawData[0][y].getBlockID().getID());
+				BufferedImage tex = textures.get(drawData[0][y].getBlockID().getID());
 				g.drawImage(tex, 
 						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
 						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
@@ -271,7 +298,7 @@ public class Game extends JPanel {
 			int upDown = 0;
 			if (cursor.y < ui.getLocation().y + VisualDefinitions.BLOCK_HEIGHT) {
 				upDown = -1;
-			}else if (cursor.y > ui.getLocation().y + ui.getHeight() - VisualDefinitions.BLOCK_HEIGHT) {
+			}else if (cursor.y > ui.getLocation().y + ui.getHeight() - (4 * VisualDefinitions.BLOCK_HEIGHT)) {
 				upDown = 1;
 			}
 

@@ -34,8 +34,8 @@ public class Block implements Serializable {
 		Snowy_Grass(24, 1.0, null, "Snowy Grass.png"), 
 		Stone_Brick(25, 1.0, null, "Stone Brick.png"), 
 		Sugar_Cane(26, 1.0, null, "Sugar Cane.png"),
-		Yellow_Flower(27, 0.1, null, "Yellow Flower.png"),
-		Rose(28, 1.0, null, "Rose.png");
+		Yellow_Flower(27, 0.4, null, "Yellow Flower.png"),
+		Rose(28, 0.45, null, "Rose.png");
 		
 		private int id;
 		private double spawnChance;

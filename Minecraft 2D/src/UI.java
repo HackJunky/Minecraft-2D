@@ -12,6 +12,8 @@ public class UI extends JFrame{
 	private static final long serialVersionUID = 8679358624834624663L;
 	private Game gameRenderer;
 	private World world;
+	
+	private Client client;
 	private Util util;
 	
 	public static void main(String[] args) {
@@ -38,7 +40,8 @@ public class UI extends JFrame{
 		
 		this.setVisible(true);
 		
-		gameRenderer = new Game(world = new World(100, 6, 64, 64, util), this);
+		gameRenderer = new Game(world = new World(false, 100, 6, 64, 64, util), this);
+		client = new Client(world);
 		getContentPane().add(gameRenderer, BorderLayout.CENTER);
 		
 		this.validate();
