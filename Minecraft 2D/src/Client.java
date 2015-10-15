@@ -32,7 +32,7 @@ public class Client {
 	public Client(World w, Game g) {
 		world = w;
 		game = g;
-		
+
 		String inputValue = null;
 		while (inputValue == null || inputValue.length() < 4) {
 			inputValue = JOptionPane.showInputDialog("Please enter a username: ");
@@ -119,24 +119,25 @@ public class Client {
 							world.getUtil().Log("Server sign on completed. Retreiving world data...");
 							validated = true;
 							authenticated = true;
-							
-							try {
-								world.setChunkData((Chunk[][])ois.readObject());
-							} catch (ClassNotFoundException e1) {
-								e1.printStackTrace();
-							}
-							
-							world.getUtil().Log("Connecting...");
-							
+							boolean firstTick = true;
+
 							while (true) {
 								try {
-									Packet incoming = (Packet)ois.readObject();
-									world.setGenerated(incoming.getState());
-									world.applyChanges(incoming.getChanges());
-									Packet outgoing = new Packet(incoming.getState());
-									outgoing.setChanges(game.getChanges());
-									oos.writeObject(outgoing);
-									oos.flush();
+									if (firstTick) {
+										world.setChunkData(((Payload)ois.readObject()).getData());
+										world.getUtil().Log("Welcome to the server!");
+										game.initialize();
+										firstTick = false;
+										oos.writeByte(0);
+									}else {
+										Packet incoming = (Packet)ois.readObject();
+										world.setGenerated(incoming.getState());
+										world.applyChanges(incoming.getChanges());
+										Packet outgoing = new Packet(incoming.getState());
+										outgoing.setChanges(game.getChanges());
+										oos.writeObject(outgoing);
+										oos.flush();
+									}
 								}catch (Exception e) {
 									world.getUtil().Log("Disconnect: Error.");
 									e.printStackTrace();

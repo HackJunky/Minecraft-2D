@@ -31,7 +31,7 @@ public class Server {
 	private static int SERVER_VERSION = 1;
 
 	private World world;
-	
+
 	private ArrayList<Packet.Modification> modifications;
 
 	enum ThreadNames {
@@ -55,7 +55,7 @@ public class Server {
 		netMasterThread.start();
 
 		eventHandler = new EventHandler();
-		eventTicker = new Timer(100, eventHandler);
+		eventTicker = new Timer(1, eventHandler);
 		eventTicker.start();
 	}
 
@@ -87,7 +87,6 @@ public class Server {
 		Socket socket;
 
 		public NetworkMaster() {
-
 			networkThreads = new Thread[Server.NETWORK_MAX_CONNECTIONS];
 			networkSockets = new NetworkSocket[Server.NETWORK_MAX_CONNECTIONS];
 		}
@@ -193,7 +192,7 @@ public class Server {
 			}
 		}
 	}
-	
+
 	synchronized public ArrayList<Packet.Modification> getChanges() {
 		ArrayList<Packet.Modification> m = modifications;
 		modifications = new ArrayList<Packet.Modification>();
@@ -282,20 +281,25 @@ public class Server {
 
 								if (verified) {	
 									boolean done = false;
-									
-									oos.writeObject(world.getChunkData());
-									
-									world.getUtil().Log("Ready! Awaiting next connection...");
-									
+									boolean firstTick = true;
+
 									while (!done) {
 										try {
-											Packet outgoing = new Packet(world.isGenerated());
-											outgoing.setChanges(getChanges());
-											oos.writeObject(outgoing);
-											oos.flush();
-											Packet incoming = (Packet)ois.readObject();
-											world.setGenerated(incoming.getState());
-											world.applyChanges(incoming.getChanges());
+											if (firstTick) {
+												oos.writeObject(new Payload(world.getChunkData()));
+												oos.flush();
+												world.getUtil().Log("Welcome, " + username + "! Awaiting next connection...");
+												firstTick = false;
+												ois.readByte();
+											}else {
+												Packet outgoing = new Packet(world.isGenerated());
+												outgoing.setChanges(getChanges());
+												oos.writeObject(outgoing);
+												oos.flush();
+												Packet incoming = (Packet)ois.readObject();
+												world.setGenerated(incoming.getState());
+												world.applyChanges(incoming.getChanges());
+											}
 										}catch (Exception e) {
 											world.getUtil().Log(username + " disconnected: Error.");
 											break;

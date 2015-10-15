@@ -86,11 +86,16 @@ public class World implements Serializable {
 		for (int i = 0; i < mods.size(); i++) {
 			Packet.Modification mod = mods.get(i);
 			setBlock(mod.getPoint(), mod.getBlock());
+			util.Log("Updating (" + mod.getPoint().x + ", " + mod.getPoint().y + ") to " + mod.getBlock().getBlockID().toString() + ".");
 		}
 	}
 	
 	public void setBlock(Point block, Block data) {
-		
+		int x = block.x / CHUNK_WIDTH;
+		int y = block.y / CHUNK_HEIGHT;
+		int dataX = block.x - (x * CHUNK_WIDTH);
+		int dataY = block.y - (y * CHUNK_HEIGHT);
+		world[x][y].getData()[dataX][dataY] = data;
 	}
 
 	public boolean isGenerated() {
@@ -120,9 +125,6 @@ public class World implements Serializable {
 	}
 	
 	synchronized public void setChunkData(Chunk[][] data) {
-		if (this.world == null) {
-			util.Log("World data retreived, welcome to the game!");
-		}
 		generated = true;
 		world = data;
 	}

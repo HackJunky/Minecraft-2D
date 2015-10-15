@@ -36,7 +36,7 @@ public class Game extends JPanel {
 	private ArrayList<BufferedImage> textures;
 	RenderingHints renderHints;
 	Composite translucent;
-	
+
 	private ArrayList<Packet.Modification> modifications;
 
 	private static class VisualDefinitions {
@@ -58,12 +58,12 @@ public class Game extends JPanel {
 		this.world = world;
 		this.ui = ui;
 		loadImages();
+	}
 
-		if (world.isGenerated()) {
-			new Thread(new Renderer()).start();
-			this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
-			this.setVisible(true);
-		}
+	public void initialize() {
+		new Thread(new Renderer()).start();
+		this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+		this.setVisible(true);
 	}
 
 	public void loadImages() {
@@ -99,7 +99,7 @@ public class Game extends JPanel {
 			return null;
 		}
 	}
-	
+
 	public ArrayList<Packet.Modification> getChanges() {
 		return modifications;
 	}
@@ -157,7 +157,7 @@ public class Game extends JPanel {
 			renderHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		}
 
-		if (world.isGenerated()) {
+		if (world.getChunkData() != null) {
 			g2d.setRenderingHints(renderHints);
 
 			if (drawDebug) {
@@ -270,22 +270,24 @@ public class Game extends JPanel {
 								VisualDefinitions.BLOCK_HEIGHT);
 						g.setColor(originalColor);
 					}
-					if (block != null && block.x == x && block.y == y) {
-						cursorRect = new Rectangle(offsetX + (x * VisualDefinitions.BLOCK_WIDTH),
-								offsetY + (y * VisualDefinitions.BLOCK_HEIGHT),
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT);
-						//						cursorText = "(" + (blockViewport.x + (x - 1)) + ", " + (blockViewport.y + (y - 1)) + ") " + drawData[x][y].getBlockID().toString().replace(
-						//								'_', ' ');
-					}
 				}
 			}
 		}
-
+		
+		if (block != null) {
+			cursorRect = new Rectangle(offsetX + (block.x * VisualDefinitions.BLOCK_WIDTH),
+					offsetY + (block.y * VisualDefinitions.BLOCK_HEIGHT),
+					VisualDefinitions.BLOCK_WIDTH, 
+					VisualDefinitions.BLOCK_HEIGHT);
+			cursorText = "(" + (blockViewport.x + block.x) + ", " + (blockViewport.y + block.y) + ") " + drawData[block.x][block.y].getBlockID().toString().replace(
+					'_', ' ');
+		}
 		if (cursorRect != null) {
 			g.setStroke(new BasicStroke(1));
 			g.drawRect(cursorRect.x, cursorRect.y, cursorRect.width, cursorRect.height);
+			g.setColor(Color.WHITE);
 			g.drawString(cursorText, cursorRect.x + cursorRect.width + (cursorRect.width / 3), cursorRect.y - fm.getHeight());
+			g.setColor(originalColor);
 			g.setStroke(originalStroke);
 		}
 
