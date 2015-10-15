@@ -42,6 +42,13 @@ public class Game extends JPanel {
 	private static class VisualDefinitions {
 		private static int BLOCK_WIDTH = 24;
 		private static int BLOCK_HEIGHT = 24;
+		
+		private static int HUD_SCALE = 8;
+		private static int HOTBAR_SIZE = 8;
+		private static int HUD_ICONS = 3;	
+		private static int HUD_SPACING = 4;
+		private static int XP_HEIGHT = 8;
+		
 		private static String TEXTURE_PATH_PREFIX = "textures/";
 		private static int CAM_PAN_SPEED = 5;
 	}
@@ -279,7 +286,7 @@ public class Game extends JPanel {
 					offsetY + (block.y * VisualDefinitions.BLOCK_HEIGHT),
 					VisualDefinitions.BLOCK_WIDTH, 
 					VisualDefinitions.BLOCK_HEIGHT);
-			cursorText = "(" + (blockViewport.x + block.x) + ", " + (blockViewport.y + block.y) + ") " + drawData[block.x][block.y].getBlockID().toString().replace(
+			cursorText = "(" + blockViewport.x + block.x + ", " + blockViewport.y + block.y + ") " + drawData[block.x][block.y].getBlockID().toString().replace(
 					'_', ' ');
 		}
 		if (cursorRect != null) {
@@ -326,7 +333,31 @@ public class Game extends JPanel {
 	public void drawHUD(Graphics2D g) {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
+		
+		int hotbarWidth = (10 * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE));
+		int hotbarHeight = (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE);
+		Rectangle hotbar = new Rectangle(this.getWidth() / 2 - hotbarWidth / 2, this.getHeight() - hotbarHeight - VisualDefinitions.HUD_SPACING, hotbarWidth, hotbarHeight);
+		
+		Rectangle xpbar = new Rectangle(hotbar.x, hotbar.y - VisualDefinitions.HUD_SPACING - VisualDefinitions.XP_HEIGHT, hotbar.width, VisualDefinitions.XP_HEIGHT);
+		
+		int healthWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE); 
+		int healthHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
+		Rectangle health = new Rectangle(hotbar.x, xpbar.y - VisualDefinitions.HUD_SPACING - healthHeight, healthWidth, healthHeight);
 
+		int armorWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE); 
+		int armorHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
+		Rectangle armor = new Rectangle(hotbar.x, health.y - VisualDefinitions.HUD_SPACING - armorHeight, armorWidth, armorHeight);
+		
+		int foodWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE); 
+		int foodHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
+		Rectangle food = new Rectangle(hotbar.x + hotbar.width - foodWidth, health.y + health.height - foodHeight, foodWidth, foodHeight);
+		
+		g.drawRect(hotbar.x, hotbar.y, hotbar.width, hotbar.height);
+		g.drawRect(xpbar.x, xpbar.y, xpbar.width, xpbar.height);
+		g.drawRect(health.x, health.y, health.width, health.height);
+		g.drawRect(armor.x, armor.y, armor.width, armor.height);
+		g.drawRect(food.x, food.y, food.width, food.height);
+		
 		g.setColor(originalColor);
 		g.setStroke(originalStroke);
 	}
