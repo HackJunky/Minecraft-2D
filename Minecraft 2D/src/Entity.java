@@ -1,9 +1,12 @@
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import java.io.Serializable;
+
 import org.w3c.dom.css.Rect;
 
 
-public abstract class Entity {
+public abstract class Entity implements Serializable{
+	private static final long serialVersionUID = -2026620865575685480L;
 	String name;
 	Point position;
 	BufferedImage sprite;
