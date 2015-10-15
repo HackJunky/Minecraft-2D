@@ -286,7 +286,7 @@ public class Game extends JPanel {
 					offsetY + (block.y * VisualDefinitions.BLOCK_HEIGHT),
 					VisualDefinitions.BLOCK_WIDTH, 
 					VisualDefinitions.BLOCK_HEIGHT);
-			cursorText = "(" + blockViewport.x + block.x + ", " + blockViewport.y + block.y + ") " + drawData[block.x][block.y].getBlockID().toString().replace(
+			cursorText = "(" + (world.getWidth() - (blockViewport.x + block.x)) + ", " + (world.getHeight() - (blockViewport.y + block.y)) + ") " + drawData[block.x][block.y].getBlockID().toString().replace(
 					'_', ' ');
 		}
 		if (cursorRect != null) {
@@ -357,8 +357,6 @@ public class Game extends JPanel {
 		g.drawRect(health.x, health.y, health.width, health.height);
 		g.drawRect(armor.x, armor.y, armor.width, armor.height);
 		g.drawRect(food.x, food.y, food.width, food.height);
-	
-		
 		
 		g.setColor(originalColor);
 		g.setStroke(originalStroke);

@@ -12,6 +12,11 @@ public class Player extends Entity implements Serializable {
 	private int direction = 0;
 	private String name;
 	
+	private double health;
+	private double armor;
+	private double xp;
+	private double food;
+	
 	public Player(String name, BufferedImage[] sprites, Rect dimensions) {
 		super(new Point(0, 0), sprites[1], dimensions);
 		this.sprites = sprites;

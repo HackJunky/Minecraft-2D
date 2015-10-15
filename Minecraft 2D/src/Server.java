@@ -32,8 +32,6 @@ public class Server {
 
 	private World world;
 
-	private ArrayList<Packet.Modification> modifications;
-
 	enum ThreadNames {
 		Bashful, Doc, Dopey, Grumpy, Happy, Sleepy, Sneezy
 	}
@@ -44,7 +42,6 @@ public class Server {
 
 	public Server() {
 		netMaster = new NetworkMaster();
-		modifications = new ArrayList<Packet.Modification>();
 		world = new World(true, 100, 6, 64, 64, new Util());
 		world.getUtil().Log("Initializing server...");
 
@@ -192,11 +189,15 @@ public class Server {
 			}
 		}
 	}
-
-	synchronized public ArrayList<Packet.Modification> getChanges() {
-		ArrayList<Packet.Modification> m = modifications;
-		modifications = new ArrayList<Packet.Modification>();
-		return m;
+	
+	public void queueModifications(ArrayList<Packet.Modification> mods) {
+		for (NetworkSocket s : netMaster.networkSockets) {
+			if (s != null && s.active) {
+				for (Packet.Modification m : mods) {
+					s.modQueue.add(m);
+				}
+			}
+		}
 	}
 
 	public class NetworkSocket implements Runnable {
@@ -208,12 +209,16 @@ public class Server {
 		private String username;
 
 		private String rank = "user";
+		
+		private ArrayList<Packet.Modification> modQueue;
 
 		public NetworkSocket(Socket socket, String threadName) {
 			active = true;
 
 			name = threadName;
 			server = socket;
+			
+			modQueue = new ArrayList<Packet.Modification>();
 		}
 
 		public boolean GetActive() {
@@ -293,13 +298,15 @@ public class Server {
 												ois.readByte();
 											}else {
 												Packet outgoing = new Packet(world.isGenerated());
-												outgoing.setChanges(getChanges());
+												outgoing.setChanges(modQueue);
+												modQueue.clear();
 												outgoing.setEntities(world.getEntities());
 												oos.writeObject(outgoing);
 												oos.flush();
 												Packet incoming = (Packet)ois.readObject();
 												world.setGenerated(incoming.getState());
 												world.applyChanges(incoming.getChanges());
+												queueModifications(incoming.getChanges());
 											}
 										}catch (Exception e) {
 											world.getUtil().Log(username + " disconnected: Error.");
