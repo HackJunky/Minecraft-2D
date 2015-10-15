@@ -334,21 +334,21 @@ public class Game extends JPanel {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
 		
-		int hotbarWidth = (10 * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE));
+		int hotbarWidth = (10 * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE)) + (10 * (VisualDefinitions.HUD_SPACING / 2));
 		int hotbarHeight = (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE);
 		Rectangle hotbar = new Rectangle(this.getWidth() / 2 - hotbarWidth / 2, this.getHeight() - hotbarHeight - VisualDefinitions.HUD_SPACING, hotbarWidth, hotbarHeight);
 		
 		Rectangle xpbar = new Rectangle(hotbar.x, hotbar.y - VisualDefinitions.HUD_SPACING - VisualDefinitions.XP_HEIGHT, hotbar.width, VisualDefinitions.XP_HEIGHT);
 		
-		int healthWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE); 
+		int healthWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE) + (10 * (VisualDefinitions.HUD_SPACING / 2)); 
 		int healthHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
 		Rectangle health = new Rectangle(hotbar.x, xpbar.y - VisualDefinitions.HUD_SPACING - healthHeight, healthWidth, healthHeight);
 
-		int armorWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE); 
+		int armorWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE) + (10 * (VisualDefinitions.HUD_SPACING / 2)); 
 		int armorHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
 		Rectangle armor = new Rectangle(hotbar.x, health.y - VisualDefinitions.HUD_SPACING - armorHeight, armorWidth, armorHeight);
 		
-		int foodWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE); 
+		int foodWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE) + (10 * (VisualDefinitions.HUD_SPACING / 2)); 
 		int foodHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
 		Rectangle food = new Rectangle(hotbar.x + hotbar.width - foodWidth, health.y + health.height - foodHeight, foodWidth, foodHeight);
 		
@@ -357,6 +357,8 @@ public class Game extends JPanel {
 		g.drawRect(health.x, health.y, health.width, health.height);
 		g.drawRect(armor.x, armor.y, armor.width, armor.height);
 		g.drawRect(food.x, food.y, food.width, food.height);
+	
+		
 		
 		g.setColor(originalColor);
 		g.setStroke(originalStroke);

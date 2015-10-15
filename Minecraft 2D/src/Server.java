@@ -294,6 +294,7 @@ public class Server {
 											}else {
 												Packet outgoing = new Packet(world.isGenerated());
 												outgoing.setChanges(getChanges());
+												outgoing.setEntities(world.getEntities());
 												oos.writeObject(outgoing);
 												oos.flush();
 												Packet incoming = (Packet)ois.readObject();

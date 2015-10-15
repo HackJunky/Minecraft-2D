@@ -132,6 +132,7 @@ public class Client {
 									}else {
 										Packet incoming = (Packet)ois.readObject();
 										world.setGenerated(incoming.getState());
+										world.setEntities(incoming.getEntities());
 										world.applyChanges(incoming.getChanges());
 										Packet outgoing = new Packet(incoming.getState());
 										outgoing.setChanges(game.getChanges());

@@ -10,10 +10,28 @@ public class Packet implements Serializable{
 	}
 	
 	private boolean state;
+	private ArrayList<Entity> entities;
+	private Player player;
 	private ArrayList<Modification> changes;
 	
 	public Packet(boolean state) {
 		this.state = state;
+	}
+	
+	public void setPlayer(Player player) {
+		this.player = player;
+	}
+	
+	public Player getPlayer() {
+		return player;
+	}
+	
+	public void setEntities(ArrayList<Entity> entities) {
+		this.entities = entities;
+	}
+	
+	public ArrayList<Entity> getEntities() {
+		return entities;
 	}
 	
 	public void setChanges(ArrayList<Modification> changes) {

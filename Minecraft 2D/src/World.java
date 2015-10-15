@@ -7,12 +7,15 @@ import java.util.Random;
 public class World implements Serializable {
 	private static final long serialVersionUID = 5471323799966531710L;
 	private Chunk[][] world;
+	private ArrayList<Entity> entities;
 	private Util util;
 
 	private static int WORLD_WIDTH;
 	private static int WORLD_HEIGHT;
 	private static int CHUNK_WIDTH;
 	private static int CHUNK_HEIGHT;
+	
+	private static double WORLD_GRAVITY = -9.8;
 
 	private boolean generated;
 
@@ -43,11 +46,24 @@ public class World implements Serializable {
 				topography = generateTopography(CHUNK_WIDTH * WORLD_WIDTH);
 			}
 			if (!generated) {
+				entities = new ArrayList<Entity>();
 				generateTerrain();
+			}else {
+				for (Entity e : entities) {
+					e.tick();
+				}
 			}
 		}
 	}
+	
+	public void setEntities(ArrayList<Entity> entities) {
+		this.entities = entities;
+	}
 
+	public ArrayList<Entity> getEntities() {
+		return entities;
+	}
+	
 	public Util getUtil() {
 		return util;
 	}
