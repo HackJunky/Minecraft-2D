@@ -1,4 +1,3 @@
-import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
@@ -17,7 +16,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -34,29 +32,85 @@ public class Game extends JPanel {
 	private Rectangle previousViewport;
 
 	private ArrayList<BufferedImage> textures;
+	private ArrayList<BufferedImage> hudTextures;
+	private ArrayList<BufferedImage> entityTextures;
+
+	private Block[] hotbar;
+	int hotbarSelectedIndex = 0;
+
+	private String name;
+
+	enum UITextures {
+		Hotbar_Unselected("Tile Unselected.png"),
+		Hotbar_Selected("Tile Selected.png"),
+		Inventory("Inventory.png"),
+		Inventory_Crafting("Crafting.png"),
+		Armor("Armor.png"),
+		Armor_Half("Armor Half.png"),
+		Armor_Empty("Armor Empty.png"),
+		Heart("Heart.png"),
+		Heart_Half("Heart Half.png"),
+		Heart_Empty("Heart Empty.png"),
+		Hunger("Hunger.png"),
+		Hunger_Half("Hunger Half.png"),
+		Hunger_Empty("Hunger Empty.png"),
+		XP_Empty("XPBar Empty.png"),
+		XP_Full("XPBar Full.png");
+
+		private String path;
+
+		private UITextures(String path) {
+			this.path = path;
+		}
+
+		public String getPath() {
+			return path;
+		}
+	}
+
+	enum EntityTextures {
+		Player("Player Front.png"),
+		Player_Left("Player Left.png"),
+		Player_Right("Player Right.png");
+
+		private String path;
+
+		private EntityTextures(String path) {
+			this.path = path;
+		}
+
+		public String getPath() {
+			return path;
+		}
+	}
+
+
 	RenderingHints renderHints;
 	Composite translucent;
+
+	Player player;
 
 	private ArrayList<Packet.Modification> modifications;
 
 	private static class VisualDefinitions {
 		private static int BLOCK_WIDTH = 24;
 		private static int BLOCK_HEIGHT = 24;
-		
-		private static int HUD_SCALE = 8;
+
+		private static int HUD_SCALE = 6;
 		private static int HOTBAR_SIZE = 8;
 		private static int HUD_ICONS = 3;	
 		private static int HUD_SPACING = 4;
 		private static int XP_HEIGHT = 8;
-		
+
 		private static String TEXTURE_PATH_PREFIX = "textures/";
+		private static String UI_PATH_PREFIX = "data/UI/";
 		private static int CAM_PAN_SPEED = 5;
 	}
 
 	static {
 		System.setProperty("sun.java2d.transaccel", "True");
 		// System.setProperty("sun.java2d.trace", "timestamp,log,count");
-		// System.setProperty("sun.java2d.opengl", "True");
+		System.setProperty("sun.java2d.opengl", "True");
 		System.setProperty("sun.java2d.d3d", "True");
 		System.setProperty("sun.java2d.ddforcevram", "True");
 	}
@@ -64,6 +118,7 @@ public class Game extends JPanel {
 	public Game(World world, UI ui) {
 		this.world = world;
 		this.ui = ui;
+		hotbar = new Block[10];
 		loadImages();
 	}
 
@@ -88,6 +143,30 @@ public class Game extends JPanel {
 				//e.printStackTrace();
 			}
 		}
+		UITextures[] hud = UITextures.values();
+		hudTextures = new ArrayList<BufferedImage>();
+		for (int i = 0; i < hud.length; i++) {
+			try {
+				hudTextures.add(i, 
+						toBufferedImage(ImageIO.read(new File(VisualDefinitions.UI_PATH_PREFIX + hud[i].getPath()))));
+			} catch (Exception e) {
+				hudTextures.add(i, null);
+				world.getUtil().Log("Could not load " + hud[i].toString() + "!");
+				//e.printStackTrace();
+			}
+		}
+		EntityTextures[] entTex = EntityTextures.values();
+		entityTextures = new ArrayList<BufferedImage>();
+		for (int i = 0; i < entTex.length; i++) {
+			try {
+				entityTextures.add(i, 
+						toBufferedImage(ImageIO.read(new File(VisualDefinitions.TEXTURE_PATH_PREFIX + entTex[i].getPath()))));
+			} catch (Exception e) {
+				entityTextures.add(i, null);
+				world.getUtil().Log("Could not load " + entTex[i].toString() + "!");
+				//e.printStackTrace();
+			}
+		}
 		world.getUtil().Log("Pre-load completed in " + (System.currentTimeMillis() - startTime) + " ms.");
 	}
 
@@ -109,6 +188,10 @@ public class Game extends JPanel {
 
 	public ArrayList<Packet.Modification> getChanges() {
 		return modifications;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public void viewLeft() {
@@ -174,6 +257,10 @@ public class Game extends JPanel {
 			drawWorld(g2d);
 			drawHUD(g2d);
 			drawEntities(g2d);
+			drawLightValues(g2d);
+		}
+		if (player == null && name != null) {
+			player = new Player(name, new Point(VisualDefinitions.BLOCK_WIDTH, (2 * VisualDefinitions.BLOCK_HEIGHT) + 1));
 		}
 	}
 
@@ -228,6 +315,11 @@ public class Game extends JPanel {
 				g.setColor(originalColor);
 			}else {
 				BufferedImage tex = textures.get(drawData[0][y].getBlockID().getID());
+				g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
+						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
+						VisualDefinitions.BLOCK_WIDTH, 
+						VisualDefinitions.BLOCK_HEIGHT, this);
 				g.drawImage(tex, 
 						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
 						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
@@ -245,6 +337,11 @@ public class Game extends JPanel {
 				g.setColor(originalColor);
 			}else {
 				Image tex = textures.get(drawData[x][0].getBlockID().getID());
+				g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
+						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
+						VisualDefinitions.BLOCK_WIDTH, 
+						VisualDefinitions.BLOCK_HEIGHT, this);
 				g.drawImage(tex, 
 						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
 						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
@@ -264,6 +361,11 @@ public class Game extends JPanel {
 				}else {
 					Image tex = textures.get(drawData[x][y].getBlockID().getID());
 					if (tex != null) {
+						g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
+								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
+								VisualDefinitions.BLOCK_WIDTH, 
+								VisualDefinitions.BLOCK_HEIGHT, this);
 						g.drawImage(tex, 
 								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
 								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
@@ -280,8 +382,8 @@ public class Game extends JPanel {
 				}
 			}
 		}
-		
-		if (block != null) {
+
+		if (block != null && block.x >= 0 && block.y >= 0) {
 			cursorRect = new Rectangle(offsetX + (block.x * VisualDefinitions.BLOCK_WIDTH),
 					offsetY + (block.y * VisualDefinitions.BLOCK_HEIGHT),
 					VisualDefinitions.BLOCK_WIDTH, 
@@ -333,13 +435,29 @@ public class Game extends JPanel {
 	public void drawHUD(Graphics2D g) {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
-		
-		int hotbarWidth = (10 * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE)) + (10 * (VisualDefinitions.HUD_SPACING / 2));
+
+		//		0 Hotbar_Unselected("Tile Unselected.png"),
+		//		1 Hotbar_Selected("Tile Selected.png"),
+		//		2 Inventory("Inventory.png"),
+		//		3 Inventory_Crafting("Crafting.png"),
+		//		4 Armor("Armor.png"),
+		//		5 Armor_Half("Armor Half.png"),
+		//		6 Armor_Empty("Armor Empty.png"),
+		//		7 Heart("Heart.png"),
+		//		8 Heart_Half("Heart Half.png"),
+		//		9 Heart_Empty("Heart Empty.png"),
+		//		10 Hunger("Hunger.png"),
+		//		11 Hunger_Half("Hunger Half.png"),
+		//		12 Hunger_Empty("Hunger Empty.png"),
+		//		13 XP_Empty("XPBar Empty.png"),
+		//		14 XP_Full("XPBar Full.png");
+
+		int hotbarWidth = (this.hotbar.length * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE));
 		int hotbarHeight = (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE);
 		Rectangle hotbar = new Rectangle(this.getWidth() / 2 - hotbarWidth / 2, this.getHeight() - hotbarHeight - VisualDefinitions.HUD_SPACING, hotbarWidth, hotbarHeight);
-		
-		Rectangle xpbar = new Rectangle(hotbar.x, hotbar.y - VisualDefinitions.HUD_SPACING - VisualDefinitions.XP_HEIGHT, hotbar.width, VisualDefinitions.XP_HEIGHT);
-		
+
+		Rectangle xpbar = new Rectangle(hotbar.x, hotbar.y - 2 - VisualDefinitions.XP_HEIGHT, hotbar.width, VisualDefinitions.XP_HEIGHT);
+
 		int healthWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE) + (10 * (VisualDefinitions.HUD_SPACING / 2)); 
 		int healthHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
 		Rectangle health = new Rectangle(hotbar.x, xpbar.y - VisualDefinitions.HUD_SPACING - healthHeight, healthWidth, healthHeight);
@@ -347,17 +465,117 @@ public class Game extends JPanel {
 		int armorWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE) + (10 * (VisualDefinitions.HUD_SPACING / 2)); 
 		int armorHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
 		Rectangle armor = new Rectangle(hotbar.x, health.y - VisualDefinitions.HUD_SPACING - armorHeight, armorWidth, armorHeight);
-		
+
 		int foodWidth = 10 * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE) + (10 * (VisualDefinitions.HUD_SPACING / 2)); 
 		int foodHeight = (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE);
 		Rectangle food = new Rectangle(hotbar.x + hotbar.width - foodWidth, health.y + health.height - foodHeight, foodWidth, foodHeight);
+
+		//g.drawRect(hotbar.x, hotbar.y, hotbar.width, hotbar.height);
+		//g.drawRect(xpbar.x, xpbar.y, xpbar.width, xpbar.height);
+		//g.drawRect(health.x, health.y, health.width, health.height);
+		//g.drawRect(armor.x, armor.y, armor.width, armor.height);
+		//g.drawRect(food.x, food.y, food.width, food.height);
+
+		for (int i = 0; i < this.hotbar.length; i++) {
+			if (i != hotbarSelectedIndex) {
+				g.drawImage(hudTextures.get(0), 
+						hotbar.x + (i * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE)), 
+						hotbar.y, 
+						VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE,
+						VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE,
+						this);
+			}
+		}
+		g.drawImage(hudTextures.get(1), 
+				hotbar.x + (hotbarSelectedIndex * (VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE)) - (int)(0.5 * VisualDefinitions.HUD_SPACING),
+				hotbar.y - (int)(0.5 * VisualDefinitions.HUD_SPACING),
+				(VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE) + (VisualDefinitions.HUD_SPACING),
+				(VisualDefinitions.HOTBAR_SIZE * VisualDefinitions.HUD_SCALE) + (VisualDefinitions.HUD_SPACING),
+				this);
+
+		g.drawImage(hudTextures.get(13), xpbar.x, xpbar.y, xpbar.width, xpbar.height, this);
+		double xp = player.getXp();
+		g.drawImage(hudTextures.get(14), xpbar.x, xpbar.y, (int)(xpbar.width * (xp / 50)), xpbar.height, this);
+
+		double dblHealth = player.getHealth();
+		double dblArmor = player.getArmor();
+		double dblFood = player.getFood();
 		
-		g.drawRect(hotbar.x, hotbar.y, hotbar.width, hotbar.height);
-		g.drawRect(xpbar.x, xpbar.y, xpbar.width, xpbar.height);
-		g.drawRect(health.x, health.y, health.width, health.height);
-		g.drawRect(armor.x, armor.y, armor.width, armor.height);
-		g.drawRect(food.x, food.y, food.width, food.height);
-		
+		for (double i = 1; i <= 10; i++) {
+			if (i <= dblHealth) {
+				g.drawImage(hudTextures.get(7), 
+						health.x + ((int)(i - 1) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+						health.y, 
+						VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+						VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+						this);
+			}else {
+				if (dblHealth % 1 != 0 && i - 0.5 == dblHealth) {
+					g.drawImage(hudTextures.get(8), 
+							health.x + ((int)(i - 1) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+							health.y, 
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							this);
+				}else {
+					g.drawImage(hudTextures.get(9), 
+							health.x + ((int)(i - 1) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+							health.y, 
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							this);
+				}
+			}
+			if (i <= dblArmor) {
+				g.drawImage(hudTextures.get(4), 
+						armor.x + ((int)(i - 1) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+						armor.y, 
+						VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+						VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+						this);
+			}else {
+				if (dblArmor % 1 != 0 && i - 0.5 == dblArmor) {
+					g.drawImage(hudTextures.get(5), 
+							armor.x + ((int)(i - 1) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+							armor.y, 
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							this);
+				}else {
+					g.drawImage(hudTextures.get(6), 
+							armor.x + ((int)(i - 1)  * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+							armor.y, 
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							this);
+				}
+			}
+			if (i <= dblFood) {
+				g.drawImage(hudTextures.get(10), 
+						food.x + ((10 - (int)(i - 1)) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+						food.y, 
+						VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+						VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+						this);
+			}else {
+				if (dblFood % 1 != 0 && i - 0.5 == dblFood) {
+					g.drawImage(hudTextures.get(11), 
+							food.x + ((10 - (int)(i - 1)) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+							food.y, 
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							this);
+				}else {
+					g.drawImage(hudTextures.get(12), 
+							food.x + ((10 - (int)(i - 1)) * (VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE)), 
+							food.y, 
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							VisualDefinitions.HUD_ICONS * VisualDefinitions.HUD_SCALE,
+							this);
+				}	
+			}
+		}
+
 		g.setColor(originalColor);
 		g.setStroke(originalStroke);
 	}
@@ -366,6 +584,14 @@ public class Game extends JPanel {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
 
+		g.setColor(originalColor);
+		g.setStroke(originalStroke);
+	}
+	
+	public void drawLightValues(Graphics2D g) {
+		Color originalColor = g.getColor();
+		Stroke originalStroke = g.getStroke();
+		
 		g.setColor(originalColor);
 		g.setStroke(originalStroke);
 	}

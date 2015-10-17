@@ -70,6 +70,7 @@ public class Block implements Serializable {
 	
 	public Block(BlockID block) {
 		this.block = block;
+		this.lightValue = 1.0f;
 	}
 	
 	public void tick() {
@@ -82,5 +83,9 @@ public class Block implements Serializable {
 	
 	public float getLightValue() {
 		return lightValue;
+	}
+	
+	public void setLightValue(float lightValue) {
+		this.lightValue = lightValue;
 	}
 }

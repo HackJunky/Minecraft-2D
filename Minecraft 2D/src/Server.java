@@ -295,7 +295,7 @@ public class Server {
 												oos.flush();
 												world.getUtil().Log("Welcome, " + username + "! Awaiting next connection...");
 												firstTick = false;
-												ois.readByte();
+												world.getEntities().add((Player)ois.readObject());
 											}else {
 												Packet outgoing = new Packet(world.isGenerated());
 												outgoing.setChanges(modQueue);

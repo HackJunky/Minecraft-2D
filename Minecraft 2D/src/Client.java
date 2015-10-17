@@ -37,6 +37,7 @@ public class Client {
 		while (inputValue == null || inputValue.length() < 4) {
 			inputValue = JOptionPane.showInputDialog("Please enter a username: ");
 		}
+		game.setName(inputValue);
 		authenticate(inputValue);
 	}
 
@@ -128,7 +129,7 @@ public class Client {
 										world.getUtil().Log("Welcome to the server!");
 										game.initialize();
 										firstTick = false;
-										oos.writeByte(0);
+										oos.writeObject(game.player);
 									}else {
 										Packet incoming = (Packet)ois.readObject();
 										world.setGenerated(incoming.getState());

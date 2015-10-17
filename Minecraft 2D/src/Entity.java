@@ -10,21 +10,15 @@ public abstract class Entity implements Serializable{
 	private static final long serialVersionUID = -2026620865575685480L;
 	Point position;
 	Point block;
-	BufferedImage sprite;
-	Rect bounds;
+	Point bounds;
 	
 	String ID;
 	
-	public Entity(Point position, BufferedImage sprite, Rect bounds) {
+	public Entity(Point position, Point bounds) {
 		this.position = position;
-		this.sprite = sprite;
 		this.bounds = bounds;
 		
 		ID = UUID.randomUUID().toString();
-	}
-	
-	public void setSprite(BufferedImage sprite) {
-		this.sprite = sprite;
 	}
 	
 	public void setPosition(Point pos) {
@@ -36,7 +30,7 @@ public abstract class Entity implements Serializable{
 		return position;
 	}
 	
-	public Rect getBounds() {
+	public Point getBounds() {
 		return bounds;
 	}
 	
