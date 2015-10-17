@@ -224,27 +224,27 @@ public class Chunk implements Serializable{
 	}
 
 	private void generateLiquids() {
-		Random rand = new Random();
-		if (rand.nextFloat() < 0.30) {
-			int startX = -1;
-			int endX = -1;
-			for (int x = 0; x < CHUNK_WIDTH; x++) {
-				if (data[x][WORLD_OCEAN_LEVEL].getBlockID().equals(Block.BlockID.Grass)) {
-					if (startX == -1) {
-						startX = x;
-					}else {
-						endX = x;
-					}
-				}
-			}
-			if (startX > -1 && endX > -1) {
-				if (endX - startX > 5) {
-					for (int x = startX; x < endX; x++) {
-						
-					}
-				}
-			}
-		}
+//		Random rand = new Random();
+//		if (rand.nextFloat() < 0.30) {
+//			int startX = -1;
+//			int endX = -1;
+//			for (int x = 0; x < CHUNK_WIDTH; x++) {
+//				if (data[x][WORLD_OCEAN_LEVEL].getBlockID().equals(Block.BlockID.Grass)) {
+//					if (startX == -1) {
+//						startX = x;
+//					}else {
+//						endX = x;
+//					}
+//				}
+//			}
+//			if (startX > -1 && endX > -1) {
+//				if (endX - startX > 5) {
+//					for (int x = startX; x < endX; x++) {
+//						
+//					}
+//				}
+//			}
+//		}
 		generationStage++;
 	}
 

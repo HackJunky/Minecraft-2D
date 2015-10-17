@@ -1,3 +1,4 @@
+import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
@@ -257,7 +258,6 @@ public class Game extends JPanel {
 			drawWorld(g2d);
 			drawHUD(g2d);
 			drawEntities(g2d);
-			drawLightValues(g2d);
 		}
 		if (player == null && name != null) {
 			player = new Player(name, new Point(VisualDefinitions.BLOCK_WIDTH, (2 * VisualDefinitions.BLOCK_HEIGHT) + 1));
@@ -283,6 +283,7 @@ public class Game extends JPanel {
 		Color originalColor = g.getColor();
 		Stroke originalStroke = g.getStroke();
 		FontMetrics fm = g.getFontMetrics();
+		Composite originalComposite = g.getComposite();
 
 		Rectangle blockViewport = convertViewportToBlocks(viewport);
 
@@ -315,16 +316,26 @@ public class Game extends JPanel {
 				g.setColor(originalColor);
 			}else {
 				BufferedImage tex = textures.get(drawData[0][y].getBlockID().getID());
-				g.drawImage(textures.get(Block.BlockID.Air.getID()), 
-						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
-						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
-						VisualDefinitions.BLOCK_WIDTH, 
-						VisualDefinitions.BLOCK_HEIGHT, this);
+				if (drawData[0][y].getBlockID() == Block.BlockID.Rose || drawData[0][y].getBlockID() == Block.BlockID.Yellow_Flower) {
+					g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+							-(VisualDefinitions.BLOCK_WIDTH - offsetX),
+							offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
+							VisualDefinitions.BLOCK_WIDTH, 
+							VisualDefinitions.BLOCK_HEIGHT, this);
+				}
 				g.drawImage(tex, 
 						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
 						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
 						VisualDefinitions.BLOCK_WIDTH, 
 						VisualDefinitions.BLOCK_HEIGHT, this);
+				AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC, drawData[0][y].getLightValue());
+				g.setComposite(ac);
+				g.drawImage(textures.get(31), 
+						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
+						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
+						VisualDefinitions.BLOCK_WIDTH, 
+						VisualDefinitions.BLOCK_HEIGHT, this);
+				g.setComposite(originalComposite);
 			}
 		}
 		for (int x = 0; x < drawData.length; x++) {
@@ -337,16 +348,26 @@ public class Game extends JPanel {
 				g.setColor(originalColor);
 			}else {
 				Image tex = textures.get(drawData[x][0].getBlockID().getID());
-				g.drawImage(textures.get(Block.BlockID.Air.getID()), 
-						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
-						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
-						VisualDefinitions.BLOCK_WIDTH, 
-						VisualDefinitions.BLOCK_HEIGHT, this);
+				if (drawData[x][0].getBlockID() == Block.BlockID.Rose || drawData[x][0].getBlockID() == Block.BlockID.Yellow_Flower) {
+					g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+							offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
+							-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
+							VisualDefinitions.BLOCK_WIDTH, 
+							VisualDefinitions.BLOCK_HEIGHT, this);
+				}
 				g.drawImage(tex, 
 						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
 						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
 						VisualDefinitions.BLOCK_WIDTH, 
 						VisualDefinitions.BLOCK_HEIGHT, this);
+				AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC, drawData[x][0].getLightValue());
+				g.setComposite(ac);
+				g.drawImage(textures.get(31), 
+						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
+						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
+						VisualDefinitions.BLOCK_WIDTH, 
+						VisualDefinitions.BLOCK_HEIGHT, this);
+				g.setComposite(originalComposite);
 			}
 		}
 		for (int x = 1; x < drawData.length; x++) {
@@ -361,16 +382,25 @@ public class Game extends JPanel {
 				}else {
 					Image tex = textures.get(drawData[x][y].getBlockID().getID());
 					if (tex != null) {
-						g.drawImage(textures.get(Block.BlockID.Air.getID()), 
-								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
-								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT, this);
+						if (drawData[x][y].getBlockID() == Block.BlockID.Rose || drawData[x][y].getBlockID() == Block.BlockID.Yellow_Flower) {
+							g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+									offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
+									offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
+									VisualDefinitions.BLOCK_WIDTH, 
+									VisualDefinitions.BLOCK_HEIGHT, this);
+						}
 						g.drawImage(tex, 
 								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
 								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
 								VisualDefinitions.BLOCK_WIDTH, 
 								VisualDefinitions.BLOCK_HEIGHT, this);
+						AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC, drawData[x][y].getLightValue());
+						g.drawImage(textures.get(31), 
+								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
+								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
+								VisualDefinitions.BLOCK_WIDTH, 
+								VisualDefinitions.BLOCK_HEIGHT, this);
+						g.setComposite(originalComposite);
 					}else {
 						g.setColor(Color.MAGENTA);
 						g.fillRect(offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
@@ -500,7 +530,7 @@ public class Game extends JPanel {
 		double dblHealth = player.getHealth();
 		double dblArmor = player.getArmor();
 		double dblFood = player.getFood();
-		
+
 		for (double i = 1; i <= 10; i++) {
 			if (i <= dblHealth) {
 				g.drawImage(hudTextures.get(7), 
@@ -588,14 +618,6 @@ public class Game extends JPanel {
 		g.setStroke(originalStroke);
 	}
 	
-	public void drawLightValues(Graphics2D g) {
-		Color originalColor = g.getColor();
-		Stroke originalStroke = g.getStroke();
-		
-		g.setColor(originalColor);
-		g.setStroke(originalStroke);
-	}
-
 	public class Renderer implements Runnable {
 		private final static int MAX_FPS = 60;	
 		private final static int MAX_FRAME_SKIPS = 5;	

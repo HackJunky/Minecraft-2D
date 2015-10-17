@@ -37,7 +37,8 @@ public class Block implements Serializable {
 		Yellow_Flower(27, 0.4, null, "Yellow Flower.png"),
 		Rose(28, 0.45, null, "Rose.png"),
 		Water(29, 1.0, null, "Water.png"),
-		Lava(30, 1.0, new Point(0, 4), "Lava.png");
+		Lava(30, 1.0, new Point(0, 4), "Lava.png"),
+		Alpha(31, 1.0, null, "Light.png");
 		
 		private int id;
 		private double spawnChance;
@@ -82,7 +83,7 @@ public class Block implements Serializable {
 	}
 	
 	public float getLightValue() {
-		return lightValue;
+		return (1.0f - lightValue);
 	}
 	
 	public void setLightValue(float lightValue) {
