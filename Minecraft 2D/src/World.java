@@ -14,8 +14,15 @@ public class World implements Serializable {
 	private static int WORLD_HEIGHT;
 	private static int CHUNK_WIDTH;
 	private static int CHUNK_HEIGHT;
-	
+
 	private static double WORLD_GRAVITY = -9.8;
+
+	private float worldLightValue = 0.0f;
+
+	private float worldTime = -1.0f;
+	private boolean timeToggle = false;
+
+	private long lastTime = 0;
 
 	private boolean generated;
 
@@ -30,7 +37,7 @@ public class World implements Serializable {
 		WORLD_HEIGHT = chunksHigh;
 		CHUNK_WIDTH = chunkWidth;
 		CHUNK_HEIGHT = chunkHeight;
-		
+
 		this.isServer = isServer;
 
 		this.util = util;
@@ -42,6 +49,9 @@ public class World implements Serializable {
 
 	public void update() {
 		if (isServer) {
+			if (lastTime == 0) {
+				lastTime = System.currentTimeMillis();
+			}
 			if (topography == null) {
 				topography = generateTopography(CHUNK_WIDTH * WORLD_WIDTH);
 			}
@@ -53,9 +63,11 @@ public class World implements Serializable {
 					e.tick();
 				}
 			}
+			calculateTime();
+			lastTime = System.currentTimeMillis();
 		}
 	}
-	
+
 	public void setEntities(ArrayList<Entity> entities) {
 		this.entities = entities;
 	}
@@ -63,7 +75,7 @@ public class World implements Serializable {
 	public ArrayList<Entity> getEntities() {
 		return entities;
 	}
-	
+
 	public Util getUtil() {
 		return util;
 	}
@@ -74,6 +86,10 @@ public class World implements Serializable {
 
 	public int getWidth() {
 		return CHUNK_WIDTH * WORLD_WIDTH;
+	}
+
+	public float getLightLevel() {
+		return worldLightValue;
 	}
 
 	public Point convertToWorldspace(int chunkX, int chunkY, Point pos) {
@@ -97,7 +113,7 @@ public class World implements Serializable {
 		}
 		return output;
 	}
-	
+
 	synchronized public void applyChanges(ArrayList<Packet.Modification> mods) {
 		for (int i = 0; i < mods.size(); i++) {
 			Packet.Modification mod = mods.get(i);
@@ -105,7 +121,36 @@ public class World implements Serializable {
 			util.Log("Updating (" + mod.getPoint().x + ", " + mod.getPoint().y + ") to " + mod.getBlock().getBlockID().toString() + ".");
 		}
 	}
-	
+
+	public void calculateTime() {
+		float timePassed = 0.1f;
+		if (timeToggle) {
+			worldTime -= timePassed;
+			if (worldTime <= -0.8f) {
+				timeToggle = false;
+			}
+		}else {
+			worldTime += timePassed;
+			if (worldTime >= 0.8f) {
+				timeToggle = true;
+			}
+		}
+		if (worldTime < 0) {
+			if (worldLightValue < 1.0f) {
+				worldLightValue = 0.3f + worldTime;
+			}
+		}else {
+			if (worldLightValue > -1.0f) {
+				worldLightValue = 0.3f - worldTime;
+			}
+		}
+
+	}
+
+	public float getTime() {
+		return worldTime;
+	}
+
 	public void setBlock(Point block, Block data) {
 		int x = block.x / CHUNK_WIDTH;
 		int y = block.y / CHUNK_HEIGHT;
@@ -139,7 +184,7 @@ public class World implements Serializable {
 	synchronized public Chunk[][] getChunkData() {
 		return world;
 	}
-	
+
 	synchronized public void setChunkData(Chunk[][] data) {
 		generated = true;
 		world = data;

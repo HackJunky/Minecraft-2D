@@ -285,6 +285,9 @@ public class Game extends JPanel {
 		FontMetrics fm = g.getFontMetrics();
 		Composite originalComposite = g.getComposite();
 
+		Color worldLight = new Color(0, 0, 0, world.getLightLevel());
+		Color skyColor = Color.blue;
+
 		Rectangle blockViewport = convertViewportToBlocks(viewport);
 
 		if (!previousViewport.equals(convertViewportToBlocks(viewport))) {
@@ -315,27 +318,29 @@ public class Game extends JPanel {
 						VisualDefinitions.BLOCK_HEIGHT);
 				g.setColor(originalColor);
 			}else {
-				BufferedImage tex = textures.get(drawData[0][y].getBlockID().getID());
-				if (drawData[0][y].getBlockID() == Block.BlockID.Rose || drawData[0][y].getBlockID() == Block.BlockID.Yellow_Flower) {
-					g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+				if (drawData[0][y].getBlockID().equals(Block.BlockID.Air)) {
+					g.setColor(skyColor);
+					g.fillRect(-(VisualDefinitions.BLOCK_WIDTH - offsetX),
+							offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
+							VisualDefinitions.BLOCK_WIDTH, 
+							VisualDefinitions.BLOCK_HEIGHT);
+					g.setColor(originalColor);
+				}else {
+					BufferedImage tex = textures.get(drawData[0][y].getBlockID().getID());
+					if (drawData[0][y].getBlockID() == Block.BlockID.Rose || drawData[0][y].getBlockID() == Block.BlockID.Yellow_Flower) {
+						g.setColor(skyColor);
+						g.fillRect(-(VisualDefinitions.BLOCK_WIDTH - offsetX),
+								offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
+								VisualDefinitions.BLOCK_WIDTH, 
+								VisualDefinitions.BLOCK_HEIGHT);
+						g.setColor(originalColor);
+					}
+					g.drawImage(tex, 
 							-(VisualDefinitions.BLOCK_WIDTH - offsetX),
 							offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
 							VisualDefinitions.BLOCK_WIDTH, 
 							VisualDefinitions.BLOCK_HEIGHT, this);
 				}
-				g.drawImage(tex, 
-						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
-						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
-						VisualDefinitions.BLOCK_WIDTH, 
-						VisualDefinitions.BLOCK_HEIGHT, this);
-				AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC, drawData[0][y].getLightValue());
-				g.setComposite(ac);
-				g.drawImage(textures.get(31), 
-						-(VisualDefinitions.BLOCK_WIDTH - offsetX),
-						offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
-						VisualDefinitions.BLOCK_WIDTH, 
-						VisualDefinitions.BLOCK_HEIGHT, this);
-				g.setComposite(originalComposite);
 			}
 		}
 		for (int x = 0; x < drawData.length; x++) {
@@ -347,27 +352,29 @@ public class Game extends JPanel {
 						VisualDefinitions.BLOCK_HEIGHT);
 				g.setColor(originalColor);
 			}else {
-				Image tex = textures.get(drawData[x][0].getBlockID().getID());
-				if (drawData[x][0].getBlockID() == Block.BlockID.Rose || drawData[x][0].getBlockID() == Block.BlockID.Yellow_Flower) {
-					g.drawImage(textures.get(Block.BlockID.Air.getID()), 
+				if (drawData[x][0].getBlockID().equals(Block.BlockID.Air)) {
+					g.setColor(skyColor);
+					g.fillRect(offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
+							-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
+							VisualDefinitions.BLOCK_WIDTH, 
+							VisualDefinitions.BLOCK_HEIGHT);
+					g.setColor(originalColor);
+				}else {
+					Image tex = textures.get(drawData[x][0].getBlockID().getID());
+					if (drawData[x][0].getBlockID() == Block.BlockID.Rose || drawData[x][0].getBlockID() == Block.BlockID.Yellow_Flower) {
+						g.setColor(skyColor);
+						g.fillRect(offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
+								-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
+								VisualDefinitions.BLOCK_WIDTH, 
+								VisualDefinitions.BLOCK_HEIGHT);
+						g.setColor(originalColor);
+					}
+					g.drawImage(tex, 
 							offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
 							-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
 							VisualDefinitions.BLOCK_WIDTH, 
 							VisualDefinitions.BLOCK_HEIGHT, this);
 				}
-				g.drawImage(tex, 
-						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
-						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
-						VisualDefinitions.BLOCK_WIDTH, 
-						VisualDefinitions.BLOCK_HEIGHT, this);
-				AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC, drawData[x][0].getLightValue());
-				g.setComposite(ac);
-				g.drawImage(textures.get(31), 
-						offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
-						-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
-						VisualDefinitions.BLOCK_WIDTH, 
-						VisualDefinitions.BLOCK_HEIGHT, this);
-				g.setComposite(originalComposite);
 			}
 		}
 		for (int x = 1; x < drawData.length; x++) {
@@ -380,34 +387,37 @@ public class Game extends JPanel {
 							VisualDefinitions.BLOCK_HEIGHT);
 					g.setColor(originalColor);
 				}else {
-					Image tex = textures.get(drawData[x][y].getBlockID().getID());
-					if (tex != null) {
-						if (drawData[x][y].getBlockID() == Block.BlockID.Rose || drawData[x][y].getBlockID() == Block.BlockID.Yellow_Flower) {
-							g.drawImage(textures.get(Block.BlockID.Air.getID()), 
-									offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
-									offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
-									VisualDefinitions.BLOCK_WIDTH, 
-									VisualDefinitions.BLOCK_HEIGHT, this);
-						}
-						g.drawImage(tex, 
-								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
-								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT, this);
-						AlphaComposite ac = AlphaComposite.getInstance(AlphaComposite.SRC, drawData[x][y].getLightValue());
-						g.drawImage(textures.get(31), 
-								offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
-								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT, this);
-						g.setComposite(originalComposite);
-					}else {
-						g.setColor(Color.MAGENTA);
+					if (drawData[x][y].getBlockID().equals(Block.BlockID.Air)) {
+						g.setColor(skyColor);
 						g.fillRect(offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
 								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
 								VisualDefinitions.BLOCK_WIDTH, 
 								VisualDefinitions.BLOCK_HEIGHT);
 						g.setColor(originalColor);
+					}else {
+						Image tex = textures.get(drawData[x][y].getBlockID().getID());
+						if (tex != null) {
+							if (drawData[x][y].getBlockID() == Block.BlockID.Rose || drawData[x][y].getBlockID() == Block.BlockID.Yellow_Flower) {
+								g.setColor(skyColor);
+								g.fillRect(offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
+										offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
+										VisualDefinitions.BLOCK_WIDTH, 
+										VisualDefinitions.BLOCK_HEIGHT);
+								g.setColor(originalColor);
+							}
+							g.drawImage(tex, 
+									offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
+									offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
+									VisualDefinitions.BLOCK_WIDTH, 
+									VisualDefinitions.BLOCK_HEIGHT, this);
+						}else {
+							g.setColor(Color.MAGENTA);
+							g.fillRect(offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
+									offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
+									VisualDefinitions.BLOCK_WIDTH, 
+									VisualDefinitions.BLOCK_HEIGHT);
+							g.setColor(originalColor);
+						}
 					}
 				}
 			}
@@ -429,6 +439,7 @@ public class Game extends JPanel {
 			g.setColor(originalColor);
 			g.setStroke(originalStroke);
 		}
+
 
 		if (cursor != null) {
 			int leftRight = 0;
@@ -617,7 +628,7 @@ public class Game extends JPanel {
 		g.setColor(originalColor);
 		g.setStroke(originalStroke);
 	}
-	
+
 	public class Renderer implements Runnable {
 		private final static int MAX_FPS = 60;	
 		private final static int MAX_FRAME_SKIPS = 5;	

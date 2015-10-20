@@ -4,7 +4,6 @@ import java.io.Serializable;
 public class Block implements Serializable {
 	private static final long serialVersionUID = -8249714158244563789L;
 	private BlockID block;
-	private float lightValue;
 	
 	public static enum BlockID { 
 		Air(0, 1.0, null, "Air.png"),
@@ -71,7 +70,6 @@ public class Block implements Serializable {
 	
 	public Block(BlockID block) {
 		this.block = block;
-		this.lightValue = 1.0f;
 	}
 	
 	public void tick() {
@@ -80,13 +78,5 @@ public class Block implements Serializable {
 	
 	public BlockID getBlockID() {
 		return block;
-	}
-	
-	public float getLightValue() {
-		return (1.0f - lightValue);
-	}
-	
-	public void setLightValue(float lightValue) {
-		this.lightValue = lightValue;
 	}
 }
