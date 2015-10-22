@@ -284,10 +284,7 @@ public class Game extends JPanel {
 		Stroke originalStroke = g.getStroke();
 		FontMetrics fm = g.getFontMetrics();
 		Composite originalComposite = g.getComposite();
-
-		Color worldLight = new Color(0, 0, 0, world.getLightLevel());
-		Color skyColor = Color.blue;
-
+		
 		Rectangle blockViewport = convertViewportToBlocks(viewport);
 
 		if (!previousViewport.equals(convertViewportToBlocks(viewport))) {
@@ -309,6 +306,11 @@ public class Game extends JPanel {
 		}
 		Rectangle cursorRect = null;
 		String cursorText = "Void";
+	
+		g.setColor(world.getSkyColor());
+		g.fillRect(0, 0, this.getWidth(), this.getHeight());
+		g.setColor(originalColor);
+		
 		for (int y = 0; y < drawData[0].length; y++) {
 			if (drawData[0][y] == null) {
 				g.setColor(Color.BLACK);
@@ -318,23 +320,8 @@ public class Game extends JPanel {
 						VisualDefinitions.BLOCK_HEIGHT);
 				g.setColor(originalColor);
 			}else {
-				if (drawData[0][y].getBlockID().equals(Block.BlockID.Air)) {
-					g.setColor(skyColor);
-					g.fillRect(-(VisualDefinitions.BLOCK_WIDTH - offsetX),
-							offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
-							VisualDefinitions.BLOCK_WIDTH, 
-							VisualDefinitions.BLOCK_HEIGHT);
-					g.setColor(originalColor);
-				}else {
+				if (!drawData[0][y].getBlockID().equals(Block.BlockID.Air)) {
 					BufferedImage tex = textures.get(drawData[0][y].getBlockID().getID());
-					if (drawData[0][y].getBlockID() == Block.BlockID.Rose || drawData[0][y].getBlockID() == Block.BlockID.Yellow_Flower) {
-						g.setColor(skyColor);
-						g.fillRect(-(VisualDefinitions.BLOCK_WIDTH - offsetX),
-								offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT);
-						g.setColor(originalColor);
-					}
 					g.drawImage(tex, 
 							-(VisualDefinitions.BLOCK_WIDTH - offsetX),
 							offsetY + (y * VisualDefinitions.BLOCK_HEIGHT) - VisualDefinitions.BLOCK_HEIGHT,
@@ -352,23 +339,8 @@ public class Game extends JPanel {
 						VisualDefinitions.BLOCK_HEIGHT);
 				g.setColor(originalColor);
 			}else {
-				if (drawData[x][0].getBlockID().equals(Block.BlockID.Air)) {
-					g.setColor(skyColor);
-					g.fillRect(offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
-							-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
-							VisualDefinitions.BLOCK_WIDTH, 
-							VisualDefinitions.BLOCK_HEIGHT);
-					g.setColor(originalColor);
-				}else {
+				if (!drawData[x][0].getBlockID().equals(Block.BlockID.Air)) {
 					Image tex = textures.get(drawData[x][0].getBlockID().getID());
-					if (drawData[x][0].getBlockID() == Block.BlockID.Rose || drawData[x][0].getBlockID() == Block.BlockID.Yellow_Flower) {
-						g.setColor(skyColor);
-						g.fillRect(offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
-								-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT);
-						g.setColor(originalColor);
-					}
 					g.drawImage(tex, 
 							offsetX + ((x) * VisualDefinitions.BLOCK_WIDTH) - VisualDefinitions.BLOCK_WIDTH,
 							-(VisualDefinitions.BLOCK_HEIGHT - offsetY),
@@ -387,24 +359,9 @@ public class Game extends JPanel {
 							VisualDefinitions.BLOCK_HEIGHT);
 					g.setColor(originalColor);
 				}else {
-					if (drawData[x][y].getBlockID().equals(Block.BlockID.Air)) {
-						g.setColor(skyColor);
-						g.fillRect(offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
-								offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
-								VisualDefinitions.BLOCK_WIDTH, 
-								VisualDefinitions.BLOCK_HEIGHT);
-						g.setColor(originalColor);
-					}else {
+					if (!drawData[x][y].getBlockID().equals(Block.BlockID.Air)) {
 						Image tex = textures.get(drawData[x][y].getBlockID().getID());
 						if (tex != null) {
-							if (drawData[x][y].getBlockID() == Block.BlockID.Rose || drawData[x][y].getBlockID() == Block.BlockID.Yellow_Flower) {
-								g.setColor(skyColor);
-								g.fillRect(offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
-										offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
-										VisualDefinitions.BLOCK_WIDTH, 
-										VisualDefinitions.BLOCK_HEIGHT);
-								g.setColor(originalColor);
-							}
 							g.drawImage(tex, 
 									offsetX + ((x - 1) * VisualDefinitions.BLOCK_WIDTH),
 									offsetY + ((y - 1) * VisualDefinitions.BLOCK_HEIGHT),
@@ -423,6 +380,10 @@ public class Game extends JPanel {
 			}
 		}
 
+		g.setColor(world.getLight());
+		g.fillRect(0, 0, this.getWidth(), this.getHeight());
+		g.setColor(originalColor);
+		
 		if (block != null && block.x >= 0 && block.y >= 0) {
 			cursorRect = new Rectangle(offsetX + (block.x * VisualDefinitions.BLOCK_WIDTH),
 					offsetY + (block.y * VisualDefinitions.BLOCK_HEIGHT),
@@ -439,7 +400,6 @@ public class Game extends JPanel {
 			g.setColor(originalColor);
 			g.setStroke(originalStroke);
 		}
-
 
 		if (cursor != null) {
 			int leftRight = 0;

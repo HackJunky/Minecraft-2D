@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.io.Serializable;
@@ -16,18 +17,15 @@ public class World implements Serializable {
 	private static int CHUNK_HEIGHT;
 
 	private static double WORLD_GRAVITY = -9.8;
+	private float deltaTime = 0f;
 
-	private float worldLightValue = 0.0f;
-
+	private Color skyColor = Color.DARK_GRAY;
+	private Color worldOverlayColor = new Color(0, 0, 0, 0.0f);		
 	private float worldTime = -1.0f;
-	private boolean timeToggle = false;
 
 	private long lastTime = 0;
-
 	private boolean generated;
-
 	long startTime;
-
 	int[] topography;
 
 	boolean isServer = true;
@@ -64,32 +62,56 @@ public class World implements Serializable {
 				}
 			}
 			calculateTime();
+			deltaTime = System.currentTimeMillis() - lastTime;
 			lastTime = System.currentTimeMillis();
 		}
 	}
 
-	public void setEntities(ArrayList<Entity> entities) {
-		this.entities = entities;
+	public void calculateTime() {
+		worldTime = floatLerp(worldTime, 1.0f, deltaTime);
+		if (worldTime >= 0.95f) {
+			worldTime = -1.0f;
+		}
+		if (worldTime <= -0.8 || worldTime >= 0.8) {
+			//Night
+			//Color from Sky -> Night Color
+			skyColor = colorLerp(skyColor, new Color(70, 80, 100, 255), deltaTime);
+		}else {
+			if (worldTime <= -0.6 || worldTime >= 0.6) {
+				//Sunrise/Sunset
+				if (worldTime < 0) {
+					//Sunrise
+					skyColor = colorLerp(skyColor, new Color(140, 200, 240, 255), deltaTime);
+				}else {
+					//Sunset
+					skyColor = colorLerp(skyColor, new Color(70, 80, 100, 255), deltaTime);
+				}
+			}else {
+				//Day
+				skyColor = colorLerp(skyColor, new Color(140, 200, 240, 255), deltaTime);
+			}
+		}
+		
+		//System.out.println("Time: " + worldTime + "@SkyColor: " + skyColor.toString());
 	}
 
-	public ArrayList<Entity> getEntities() {
-		return entities;
+	public float floatLerp(float start, float end, float deltaTime) {
+		double distance = (end - start);
+		double percent = deltaTime / 1000 / 1000;
+		double lerp = (start + (percent * distance));
+		return (float)lerp;
 	}
 
-	public Util getUtil() {
-		return util;
+	public double intLerp(int start, int end, float deltaTime) {
+		double distance = (end - start);
+		double percent = deltaTime / 1000;
+		double lerp = (start + (percent * distance));
+		System.out.println(lerp);
+		return lerp;
 	}
 
-	public int getHeight() {
-		return CHUNK_HEIGHT * WORLD_HEIGHT;
-	}
-
-	public int getWidth() {
-		return CHUNK_WIDTH * WORLD_WIDTH;
-	}
-
-	public float getLightLevel() {
-		return worldLightValue;
+	public Color colorLerp(Color a, Color b, float deltaTime) {
+		return new Color((int)intLerp(a.getRed(), b.getRed(), deltaTime), (int)intLerp(a.getGreen(), b.getGreen(), deltaTime), (int)intLerp(a.getBlue(), b.getBlue(), deltaTime), (int)intLerp(a.getAlpha(), b.getAlpha(), deltaTime));
 	}
 
 	public Point convertToWorldspace(int chunkX, int chunkY, Point pos) {
@@ -99,7 +121,6 @@ public class World implements Serializable {
 	}
 
 	public Block[][] getViewportData(Rectangle blockViewport) {
-		//System.out.println("Requesting viewport " + blockViewport.x + ", " + blockViewport.y + ", " + blockViewport.width + ", " + blockViewport.height);
 		Block[][] output = new Block[blockViewport.width + 1][blockViewport.height + 1];
 		for (int x = 0; x < blockViewport.width + 1; x++) {
 			int xInverse = blockViewport.width - x;
@@ -122,49 +143,12 @@ public class World implements Serializable {
 		}
 	}
 
-	public void calculateTime() {
-		float timePassed = 0.1f;
-		if (timeToggle) {
-			worldTime -= timePassed;
-			if (worldTime <= -0.8f) {
-				timeToggle = false;
-			}
-		}else {
-			worldTime += timePassed;
-			if (worldTime >= 0.8f) {
-				timeToggle = true;
-			}
-		}
-		if (worldTime < 0) {
-			if (worldLightValue < 1.0f) {
-				worldLightValue = 0.3f + worldTime;
-			}
-		}else {
-			if (worldLightValue > -1.0f) {
-				worldLightValue = 0.3f - worldTime;
-			}
-		}
-
-	}
-
-	public float getTime() {
-		return worldTime;
-	}
-
 	public void setBlock(Point block, Block data) {
 		int x = block.x / CHUNK_WIDTH;
 		int y = block.y / CHUNK_HEIGHT;
 		int dataX = block.x - (x * CHUNK_WIDTH);
 		int dataY = block.y - (y * CHUNK_HEIGHT);
 		world[x][y].getData()[dataX][dataY] = data;
-	}
-
-	public boolean isGenerated() {
-		return generated;
-	}
-
-	public void setGenerated(boolean b) {
-		generated = b;
 	}
 
 	public Block getBlockByCoords(Point block) {
@@ -181,14 +165,6 @@ public class World implements Serializable {
 		return world[x][y];
 	}
 
-	synchronized public Chunk[][] getChunkData() {
-		return world;
-	}
-
-	synchronized public void setChunkData(Chunk[][] data) {
-		generated = true;
-		world = data;
-	}
 
 	public void generateTerrain() {
 		int totalChunks = WORLD_WIDTH * WORLD_HEIGHT;
@@ -269,5 +245,50 @@ public class World implements Serializable {
 		}
 		util.Log("Generated terrain map in " + (System.currentTimeMillis() - start) + " ms.");
 		return output;
+	}
+
+	public boolean isGenerated() {
+		return generated;
+	}
+
+	public void setGenerated(boolean b) {
+		generated = b;
+	}
+
+	synchronized public Chunk[][] getChunkData() {
+		return world;
+	}
+
+	synchronized public void setChunkData(Chunk[][] data) {
+		generated = true;
+		world = data;
+	}
+
+	public Color getSkyColor() {
+		return skyColor;
+	}
+
+	public void setEntities(ArrayList<Entity> entities) {
+		this.entities = entities;
+	}
+
+	public ArrayList<Entity> getEntities() {
+		return entities;
+	}
+
+	public Util getUtil() {
+		return util;
+	}
+
+	public int getHeight() {
+		return CHUNK_HEIGHT * WORLD_HEIGHT;
+	}
+
+	public int getWidth() {
+		return CHUNK_WIDTH * WORLD_WIDTH;
+	}
+
+	public Color getLight() {
+		return worldOverlayColor;
 	}
 }
