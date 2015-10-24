@@ -95,8 +95,7 @@ public class World implements Serializable {
 				skyColor = colorLerp(skyColor, dayColor, deltaTime);
 			}
 		}
-		
-		//System.out.println("Time: " + worldTime + "@SkyColor: " + skyColor.toString());
+		worldOverlayColor = new Color(0, 0, 0,(int)(185 * Math.abs(worldTime)));
 	}
 
 	public float floatLerp(float start, float end, float deltaTime) {
