@@ -20,7 +20,11 @@ public class World implements Serializable {
 	private float deltaTime = 0f;
 
 	private Color skyColor = Color.DARK_GRAY;
-	private Color worldOverlayColor = new Color(0, 0, 0, 0.0f);		
+	private Color worldOverlayColor = new Color(0, 0, 0, 0);		
+	private Color sunsetColor = new Color(180, 160, 130, 255);
+	private Color sunriseColor = new Color(230, 190, 138, 255);
+	private Color dayColor = new Color(140, 200, 240, 255);
+	private Color nightColor = new Color(70, 80, 100, 255);
 	private float worldTime = -1.0f;
 
 	private long lastTime = 0;
@@ -75,20 +79,20 @@ public class World implements Serializable {
 		if (worldTime <= -0.8 || worldTime >= 0.8) {
 			//Night
 			//Color from Sky -> Night Color
-			skyColor = colorLerp(skyColor, new Color(70, 80, 100, 255), deltaTime);
+			skyColor = colorLerp(skyColor, nightColor, deltaTime);
 		}else {
 			if (worldTime <= -0.6 || worldTime >= 0.6) {
 				//Sunrise/Sunset
 				if (worldTime < 0) {
 					//Sunrise
-					skyColor = colorLerp(skyColor, new Color(140, 200, 240, 255), deltaTime);
+					skyColor = colorLerp(skyColor, sunriseColor, deltaTime);
 				}else {
 					//Sunset
-					skyColor = colorLerp(skyColor, new Color(70, 80, 100, 255), deltaTime);
+					skyColor = colorLerp(skyColor, sunsetColor, deltaTime);
 				}
 			}else {
 				//Day
-				skyColor = colorLerp(skyColor, new Color(140, 200, 240, 255), deltaTime);
+				skyColor = colorLerp(skyColor, dayColor, deltaTime);
 			}
 		}
 		
@@ -106,7 +110,6 @@ public class World implements Serializable {
 		double distance = (end - start);
 		double percent = deltaTime / 1000;
 		double lerp = (start + (percent * distance));
-		System.out.println(lerp);
 		return lerp;
 	}
 
