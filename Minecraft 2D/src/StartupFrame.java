@@ -2,17 +2,10 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.border.LineBorder;
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 
-import javax.swing.JCheckBox;
 import javax.swing.JButton;
 import java.awt.Font;
 import javax.swing.JTextField;
@@ -24,26 +17,16 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.util.Random;
 
-import javax.swing.AbstractButton;
 import javax.swing.Box;
-import javax.swing.JProgressBar;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.BevelBorder;
 import javax.swing.JRadioButton;
 import javax.swing.JToggleButton;
 import javax.swing.border.SoftBevelBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.JFormattedTextField;
 import javax.swing.JPasswordField;
-import java.awt.Button;
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeEvent;
 
 
 public class StartupFrame extends JFrame {
@@ -63,6 +46,13 @@ public class StartupFrame extends JFrame {
 	private JToggleButton btnAutoJoin;
 
 	private JButton btnConnect;
+	private JToggleButton btnShowConsole;
+	private JToggleButton tglHost;
+	private JToggleButton tglConnect;
+	
+	private JPanel panel;
+	private JPanel pnlHost;
+	private JPanel pnlConnect;
 
 	private boolean callback = false;
 
@@ -102,7 +92,7 @@ public class StartupFrame extends JFrame {
 		JLabel lblWelcomeToMinecraft = new JLabel("Welcome to Minecraft 2D, configure the options below to begin!");
 		getContentPane().add(lblWelcomeToMinecraft, "cell 0 0,alignx center");
 
-		JPanel panel = new JPanel();
+		panel = new JPanel();
 		panel.setBackground(Color.LIGHT_GRAY);
 		panel.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
 		getContentPane().add(panel, "cell 0 2,grow");
@@ -111,17 +101,17 @@ public class StartupFrame extends JFrame {
 		JLabel lblEnterAnAlias = new JLabel("Enter an Alias:");
 		panel.add(lblEnterAnAlias, "flowx,cell 0 0,aligny center");
 
-		JToggleButton tglConnect = new JToggleButton("Connect to a Server");
-		JToggleButton tglHost = new JToggleButton("Host a Server");
+		tglConnect = new JToggleButton("Connect to a Server");
+		tglHost = new JToggleButton("Host a Server");
 		tglHost.setSelected(true);
 
 		panel.add(tglHost, "cell 2 0");
 		panel.add(tglConnect, "cell 3 0");
 
-		JPanel pnlConnect = new JPanel();
+		pnlConnect = new JPanel();
 		pnlConnect.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, null, null, null, null));
 
-		JPanel pnlHost = new JPanel();
+		pnlHost = new JPanel();
 		pnlHost.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, null, null, null, null));
 
 		pnlHost.setLayout(new MigLayout("", "[][grow][][grow]", "[][][][][][grow][]"));
@@ -196,7 +186,7 @@ public class StartupFrame extends JFrame {
 		pnlHost.add(txtPortServer, "flowx,cell 1 4,growx");
 		txtPortServer.setColumns(10);
 
-		JToggleButton btnShowConsole = new JToggleButton("Show Server Console");
+		btnShowConsole = new JToggleButton("Show Server Console");
 		pnlHost.add(btnShowConsole, "cell 1 6 2 1,alignx right");
 
 		JButton btnLaunchServer = new JButton("Launch Server");
