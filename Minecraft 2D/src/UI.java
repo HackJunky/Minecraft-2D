@@ -16,11 +16,7 @@ public class UI extends JFrame{
 	private Client client;
 	private Util util;
 	
-	public static void main(String[] args) {
-		new UI();
-	}
-	
-	public UI() {
+	public UI(Client c) {
 		util = new Util();
 		
 		util.Log("Minecraft 2D - Reloaded. Initializing...");
@@ -40,12 +36,16 @@ public class UI extends JFrame{
 		
 		this.setVisible(true);
 		
-		gameRenderer = new Game(world = new World(false, 100, 6, 64, 64, util), this);
-		client = new Client(world, gameRenderer);
-		
+		client = c;
+		gameRenderer = new Game(this, client);
+
 		getContentPane().add(gameRenderer, BorderLayout.CENTER);
 		
 		this.validate();
 		this.repaint();
+	}
+
+	public Game getGame() {
+		return gameRenderer;
 	}
 }

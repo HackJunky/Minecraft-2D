@@ -27,18 +27,19 @@ public class Client {
 	private static String SERVER_IP = "127.0.0.1";
 
 	private World world;
-	private Game game;
+	private Util util;
+	private UI ui;
+	private StartupFrame callback;
 
-	public Client(World w, Game g) {
-		world = w;
-		game = g;
-
-		String inputValue = null;
-		while (inputValue == null || inputValue.length() < 4) {
-			inputValue = JOptionPane.showInputDialog("Please enter a username: ");
-		}
-		game.setName(inputValue);
-		authenticate(inputValue);
+	
+	public Client(String IP, int port, Util u, String username, StartupFrame callback) {
+		SERVER_PORT = port;
+		SERVER_IP = IP;
+		util = u;
+		
+		this.callback = callback;
+		
+		authenticate(username);
 	}
 
 
@@ -48,8 +49,12 @@ public class Client {
 		}
 		instance = new NetworkLayer(username);
 		networkClient = new Thread(instance);
-		world.getUtil().Log("Authenticating '" + username + "' with the remote server... (this process may hang)");
+		util.Log("Authenticating '" + username + "' with the remote server... (this process may hang)");
 		networkClient.start();
+	}
+	
+	public World getWorld() {
+		return world;
 	}
 
 	public class NetworkLayer implements Runnable {
@@ -87,9 +92,9 @@ public class Client {
 				out = new DataOutputStream(client.getOutputStream());
 				in = new DataInputStream(client.getInputStream());
 
-				world.getUtil().Log("Client initializing on " + client.getLocalAddress() + "@" + client.getLocalPort() + ".");
+				util.Log("Client initializing on " + client.getLocalAddress() + "@" + client.getLocalPort() + ".");
 
-				world.getUtil().Log("Preparing to handshake the client at " + client.getRemoteSocketAddress() + ". Transmitting authorization protocol.");
+				util.Log("Preparing to handshake the client at " + client.getRemoteSocketAddress() + ". Transmitting authorization protocol.");
 
 				InetAddress addr;
 				addr = InetAddress.getLocalHost();
@@ -98,7 +103,7 @@ public class Client {
 				String callsign = in.readUTF();
 
 				if (callsign.startsWith("$ERROR")) {
-					world.getUtil().Log("Server returned the network message " + callsign + ".");
+					util.Log("Server returned the network message " + callsign + ".");
 					if (callsign.startsWith("$ERROR, VERSION: ")) {
 						String remoteSource = callsign.substring("$ERROR, VERSION: ".length(), callsign.length());
 					}
@@ -107,7 +112,7 @@ public class Client {
 
 					out.writeUTF(response);
 
-					world.getUtil().Log("Sending authorization code " + response + ".");
+					util.Log("Sending authorization code " + response + ".");
 
 					String ident = in.readUTF();
 
@@ -117,31 +122,38 @@ public class Client {
 
 						String ret = in.readUTF();
 						if (ret.equals("$VALID")) {
-							world.getUtil().Log("Server sign on completed. Retreiving world data...");
+							util.Log("Server sign on completed. Retreiving world data...");
 							validated = true;
 							authenticated = true;
 							boolean firstTick = true;
 
+							ui = new UI(Client.this);
+							ui.getGame().setName(username);
+							
 							while (true) {
 								try {
 									if (firstTick) {
-										world.setChunkData(((Payload)ois.readObject()).getData());
-										world.getUtil().Log("Welcome to the server!");
-										game.initialize();
+										Payload payload = (Payload)ois.readObject();
+										world = new World(false, payload.getWorldWidth(), payload.getWorldHeight(), payload.getChunkWidth(), payload.getChunkHeight(), util);
+										world.setChunkData(payload.getData());
+										util.Log("Welcome to the server!");
+										ui.getGame().initialize();
 										firstTick = false;
-										oos.writeObject(game.player);
+										oos.writeObject(ui.getGame().player);
 									}else {
 										Packet incoming = (Packet)ois.readObject();
 										world.setGenerated(incoming.getState());
 										world.setEntities(incoming.getEntities());
 										world.applyChanges(incoming.getChanges());
+										world.setLight(incoming.getWorldLight());
+										world.setSkyColor(incoming.getSkyColor());
 										Packet outgoing = new Packet(incoming.getState());
-										outgoing.setChanges(game.getChanges());
+										outgoing.setChanges(ui.getGame().getChanges());
 										oos.writeObject(outgoing);
 										oos.flush();
 									}
 								}catch (Exception e) {
-									world.getUtil().Log("Disconnect: Error.");
+									util.Log("Disconnect: Error.");
 									e.printStackTrace();
 									break;
 								}
@@ -157,14 +169,17 @@ public class Client {
 					active = false;
 				}
 			}catch(SocketTimeoutException s) {
-				world.getUtil().Log("The socket has timed out and been reset.");
+				util.Log("The socket has timed out and been reset.");
+				callback.OnClientCallback("Connection Timed Out! Did the server go down?");
 				active = false;
 				s.printStackTrace();
 			}catch(ConnectException c) {
-				world.getUtil().Log("Connection Refused.. is the server running?");
+				util.Log("Connection Refused.. is the server running?");
+				callback.OnClientCallback("Connection Refused! Is the server running?");
 				active = false;
 			}catch(IOException e) {
-				world.getUtil().Log("The socket has been reset.");
+				util.Log("The socket has been reset.");
+				callback.OnClientCallback("Connection Reset! Did the server go down?");
 				active = false;
 				e.printStackTrace();
 			}

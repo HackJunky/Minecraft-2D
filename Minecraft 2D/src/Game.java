@@ -26,6 +26,7 @@ public class Game extends JPanel {
 
 	private World world;
 	private UI ui;
+	private Client client;
 
 	private boolean drawDebug = false;
 
@@ -85,11 +86,7 @@ public class Game extends JPanel {
 		}
 	}
 
-
-	RenderingHints renderHints;
-	Composite translucent;
-
-	Player player;
+	public Player player;
 
 	private ArrayList<Packet.Modification> modifications;
 
@@ -116,14 +113,15 @@ public class Game extends JPanel {
 		System.setProperty("sun.java2d.ddforcevram", "True");
 	}
 
-	public Game(World world, UI ui) {
-		this.world = world;
+	public Game(UI ui, Client c) {
+		client = c;
 		this.ui = ui;
 		hotbar = new Block[10];
-		loadImages();
 	}
 
 	public void initialize() {
+		world = client.getWorld();
+		loadImages();
 		new Thread(new Renderer()).start();
 		this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 		this.setVisible(true);
@@ -240,27 +238,26 @@ public class Game extends JPanel {
 
 
 	public void render(Graphics2D g2d) {
-		if (viewport == null) {
-			viewport = new Rectangle(0, 0, this.getWidth(), this.getHeight());
-			previousViewport = new Rectangle(-1, -1, -1, -1);
+		if (world != null && world.getChunkData() != null) {
+			if (player == null && name != null) {
+				player = new Player(name, new Point(VisualDefinitions.BLOCK_WIDTH, (2 * VisualDefinitions.BLOCK_HEIGHT) + 1));
+			}
+			if (viewport == null) {
+				viewport = new Rectangle(0, 0, this.getWidth(), this.getHeight());
+				previousViewport = new Rectangle(-1, -1, -1, -1);
 
-			lookAtBlock(new Point(world.getWidth() / 2, world.getHeight() / 2 + (Chunk.CHUNK_HEIGHT / 2)));
-			renderHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		}
-
-		if (world.getChunkData() != null) {
-			g2d.setRenderingHints(renderHints);
-
-			if (drawDebug) {
-				drawDebug(g2d);
+				lookAtBlock(new Point(world.getWidth() / 2, world.getHeight() / 2 + (Chunk.CHUNK_HEIGHT / 2)));
 			}
 
-			drawWorld(g2d);
-			drawHUD(g2d);
-			drawEntities(g2d);
-		}
-		if (player == null && name != null) {
-			player = new Player(name, new Point(VisualDefinitions.BLOCK_WIDTH, (2 * VisualDefinitions.BLOCK_HEIGHT) + 1));
+			if (world.getChunkData() != null) {
+				if (drawDebug) {
+					drawDebug(g2d);
+				}
+
+				drawWorld(g2d);
+				drawHUD(g2d);
+				drawEntities(g2d);
+			}
 		}
 	}
 
@@ -284,7 +281,7 @@ public class Game extends JPanel {
 		Stroke originalStroke = g.getStroke();
 		FontMetrics fm = g.getFontMetrics();
 		Composite originalComposite = g.getComposite();
-		
+
 		Rectangle blockViewport = convertViewportToBlocks(viewport);
 
 		if (!previousViewport.equals(convertViewportToBlocks(viewport))) {
@@ -306,11 +303,11 @@ public class Game extends JPanel {
 		}
 		Rectangle cursorRect = null;
 		String cursorText = "Void";
-	
+
 		g.setColor(world.getSkyColor());
 		g.fillRect(0, 0, this.getWidth(), this.getHeight());
 		g.setColor(originalColor);
-		
+
 		for (int y = 0; y < drawData[0].length; y++) {
 			if (drawData[0][y] == null) {
 				g.setColor(Color.BLACK);
@@ -383,7 +380,7 @@ public class Game extends JPanel {
 		g.setColor(world.getLight());
 		g.fillRect(0, 0, this.getWidth(), this.getHeight());
 		g.setColor(originalColor);
-		
+
 		if (block != null && block.x >= 0 && block.y >= 0) {
 			cursorRect = new Rectangle(offsetX + (block.x * VisualDefinitions.BLOCK_WIDTH),
 					offsetY + (block.y * VisualDefinitions.BLOCK_HEIGHT),

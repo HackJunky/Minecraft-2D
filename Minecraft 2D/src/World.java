@@ -11,10 +11,10 @@ public class World implements Serializable {
 	private ArrayList<Entity> entities;
 	private Util util;
 
-	private static int WORLD_WIDTH;
-	private static int WORLD_HEIGHT;
-	private static int CHUNK_WIDTH;
-	private static int CHUNK_HEIGHT;
+	private int WORLD_WIDTH;
+	private int WORLD_HEIGHT;
+	private int CHUNK_WIDTH;
+	private int CHUNK_HEIGHT;
 
 	private static double WORLD_GRAVITY = -9.8;
 	private float deltaTime = 0f;
@@ -24,8 +24,8 @@ public class World implements Serializable {
 	private Color sunsetColor = new Color(180, 160, 130, 255);
 	private Color sunriseColor = new Color(230, 190, 138, 255);
 	private Color dayColor = new Color(140, 200, 240, 255);
-	private Color nightColor = new Color(70, 80, 100, 255);
-	private float worldTime = -1.0f;
+	private Color nightColor = new Color(50, 80, 60, 255);
+	private float worldTime = 0.5f;
 
 	private long lastTime = 0;
 	private boolean generated;
@@ -58,6 +58,7 @@ public class World implements Serializable {
 				topography = generateTopography(CHUNK_WIDTH * WORLD_WIDTH);
 			}
 			if (!generated) {
+				skyColor = nightColor;
 				entities = new ArrayList<Entity>();
 				generateTerrain();
 			}else {
@@ -107,7 +108,7 @@ public class World implements Serializable {
 
 	public double intLerp(int start, int end, float deltaTime) {
 		double distance = (end - start);
-		double percent = deltaTime / 1000;
+		double percent = deltaTime / 1000 / 1000;
 		double lerp = (start + (percent * distance));
 		return lerp;
 	}
@@ -270,6 +271,10 @@ public class World implements Serializable {
 		return skyColor;
 	}
 
+	public void setSkyColor(Color c) {
+		skyColor = c;
+	}
+	
 	public void setEntities(ArrayList<Entity> entities) {
 		this.entities = entities;
 	}
@@ -282,6 +287,22 @@ public class World implements Serializable {
 		return util;
 	}
 
+	public int getWorldWidth() {
+		return WORLD_WIDTH;
+	}
+	
+	public int getWorldHeight() {
+		return WORLD_HEIGHT;
+	}
+	
+	public int getChunkWidth() {
+		return CHUNK_WIDTH;
+	}
+	
+	public int getChunkHeight() {
+		return CHUNK_HEIGHT;
+	}
+	
 	public int getHeight() {
 		return CHUNK_HEIGHT * WORLD_HEIGHT;
 	}
@@ -292,5 +313,9 @@ public class World implements Serializable {
 
 	public Color getLight() {
 		return worldOverlayColor;
+	}
+	
+	public void setLight(Color c) {
+		worldOverlayColor = c;
 	}
 }

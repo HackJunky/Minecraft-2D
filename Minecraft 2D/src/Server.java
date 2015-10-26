@@ -24,30 +24,43 @@ public class Server {
 	private Timer eventTicker;
 	private EventHandler eventHandler;
 
-	private Thread renderer;
+	private Thread heartbeat;
 
 	private static int NETWORK_MAX_CONNECTIONS = 16;
 	private static int NETWORK_PORT = 7767;
 	private static int SERVER_VERSION = 1;
 
 	private World world;
+	private Util util;
+	
+	private boolean postINIT = false;
+	
+	private StartupFrame callback;
 
 	enum ThreadNames {
 		Bashful, Doc, Dopey, Grumpy, Happy, Sleepy, Sneezy
 	}
 
-	public static void main(String[] args) {
-		new Server();
-	}
-
-	public Server() {
+	public Server(Util u, StartupFrame callback, int port, int maxPlayers, int CHUNK_WIDTH, int CHUNK_HEIGHT, int WORLD_WIDTH, int WORLD_HEIGHT) {
+		NETWORK_PORT = port;
+		NETWORK_MAX_CONNECTIONS = maxPlayers;
+		
 		netMaster = new NetworkMaster();
-		world = new World(true, 100, 6, 64, 64, new Util());
-		world.getUtil().Log("Initializing server...");
+		world = new World(true, WORLD_WIDTH, WORLD_HEIGHT, CHUNK_WIDTH, CHUNK_HEIGHT, u);
 
-		renderer = new Thread(new Renderer());
-		renderer.start();
-
+		this.callback = callback;
+		
+		util = u;	
+		
+		util.Log("Initializing server...");
+		
+		heartbeat = new Thread(new Heartbeat());
+		heartbeat.start();
+	}
+	
+	public void OnWorldComplete() {
+		postINIT = true;
+		
 		netMasterThread = new Thread(netMaster);
 		netMasterThread.start();
 
@@ -97,10 +110,13 @@ public class Server {
 				}
 
 				while (true) {
-					world.getUtil().Log("Awaiting connections on Port " + serverSocket.getLocalPort() + "...");
+					util.Log("Awaiting connections on Port " + serverSocket.getLocalPort() + "...");
+					
+					callback.OnServerCallback();
+					
 					socket = serverSocket.accept();
 
-					world.getUtil().Log("Connection requested from " + socket.getRemoteSocketAddress() + "... Delegating thread.");
+					util.Log("Connection requested from " + socket.getRemoteSocketAddress() + "... Delegating thread.");
 
 					boolean success = false;
 					for (int i = 0; i < networkThreads.length; i++) {
@@ -108,7 +124,7 @@ public class Server {
 
 						if (networkThreads[i] != null) {
 							if (!networkSockets[i].GetActive()) {
-								world.getUtil().Log("Allocating space for network user...");
+								util.Log("Allocating space for network user...");
 								networkThreads[i].interrupt();
 								networkThreads[i] = null;
 								networkSockets[i] = null;
@@ -121,7 +137,7 @@ public class Server {
 						}
 
 						if (isClear) {
-							world.getUtil().Log("Allocating thread " + i + ". Preparing network setup...");
+							util.Log("Allocating thread " + i + ". Preparing network setup...");
 							Random rand = new Random();
 							String randomName = ThreadNames.values()[rand.nextInt(ThreadNames.values().length)].toString() + rand.nextInt(9) + rand.nextInt(9) + rand.nextInt(9);
 							networkThreads[i] = new Thread(networkSockets[i] = new NetworkSocket(socket, randomName));
@@ -131,7 +147,7 @@ public class Server {
 						}
 					}
 					if (!success) {
-						world.getUtil().Log("CRITICAL ERROR. I DON'T HAVE ANYWHERE TO PUT MY NEXT CLIENT.");
+						util.Log("CRITICAL ERROR. I DON'T HAVE ANYWHERE TO PUT MY NEXT CLIENT.");
 					}
 				}
 			} catch (IOException e1) {
@@ -150,7 +166,7 @@ public class Server {
 		}
 	}
 
-	public class Renderer implements Runnable {
+	public class Heartbeat implements Runnable {
 		private final static int MAX_FPS = 60;	
 		private final static int MAX_FRAME_SKIPS = 5;	
 		private final static int FRAME_PERIOD = 1000 / MAX_FPS;	
@@ -182,6 +198,10 @@ public class Server {
 						world.update();
 						sleepTime += FRAME_PERIOD;	
 						framesSkipped++;
+					}
+					
+					if (!postINIT && world.isGenerated()) {
+						OnWorldComplete();
 					}
 				} finally {
 					Toolkit.getDefaultToolkit().sync();
@@ -241,8 +261,8 @@ public class Server {
 					out = new DataOutputStream(server.getOutputStream());
 					in = new DataInputStream(server.getInputStream());
 
-					world.getUtil().Log("Activating " + name + " on port " + server.getLocalPort() + ".");
-					world.getUtil().Log("[" + name + "] Authorizing " + server.getRemoteSocketAddress() + "...");
+					util.Log("Activating " + name + " on port " + server.getLocalPort() + ".");
+					util.Log("[" + name + "] Authorizing " + server.getRemoteSocketAddress() + "...");
 
 					String opening = in.readUTF();
 					String[] entries = opening.split("%");
@@ -279,7 +299,7 @@ public class Server {
 									if (identification.startsWith("$IDENTIFY")) {
 										username = identification.substring("$IDENTIFY ".length(), identification.length());
 										out.writeUTF("$VALID");
-										world.getUtil().Log("Sending world data...");
+										util.Log("Sending world data...");
 										verified = true;
 									}
 								}
@@ -291,9 +311,9 @@ public class Server {
 									while (!done) {
 										try {
 											if (firstTick) {
-												oos.writeObject(new Payload(world.getChunkData()));
+												oos.writeObject(new Payload(world.getChunkData(), world.getWorldWidth(), world.getWorldHeight(), world.getChunkWidth(), world.getChunkHeight()));
 												oos.flush();
-												world.getUtil().Log("Welcome, " + username + "! Awaiting next connection...");
+												util.Log("Welcome, " + username + "! Awaiting next connection...");
 												firstTick = false;
 												world.getEntities().add((Player)ois.readObject());
 											}else {
@@ -301,6 +321,8 @@ public class Server {
 												outgoing.setChanges(modQueue);
 												modQueue.clear();
 												outgoing.setEntities(world.getEntities());
+												outgoing.setSkyColor(world.getSkyColor());
+												outgoing.setWorldLight(world.getLight());
 												oos.writeObject(outgoing);
 												oos.flush();
 												Packet incoming = (Packet)ois.readObject();
@@ -309,30 +331,30 @@ public class Server {
 												queueModifications(incoming.getChanges());
 											}
 										}catch (Exception e) {
-											world.getUtil().Log(username + " disconnected: Error.");
+											util.Log(username + " disconnected: Error.");
 											break;
 										}
 									}
 								}else {
-									world.getUtil().Log("Remote Client failed to identify themselves. This is not malicious, they simply failed to log in.");
+									util.Log("Remote Client failed to identify themselves. This is not malicious, they simply failed to log in.");
 								}
 							}else {
 								out.writeUTF("$ERROR, HANDSHAKE");
-								world.getUtil().Log("MISMATCH! Client failed to provide proper handshake! Closing the Server!");
+								util.Log("MISMATCH! Client failed to provide proper handshake! Closing the Server!");
 							}
 						}else {
 							out.writeUTF("$ERROR, IP");
-							world.getUtil().Log("MISMATCH! Client says their IP is " + remoteIP + " but we see " + server.getRemoteSocketAddress() + "! Closing the Server!");
+							util.Log("MISMATCH! Client says their IP is " + remoteIP + " but we see " + server.getRemoteSocketAddress() + "! Closing the Server!");
 						}
 					}else {
 						out.writeUTF("$ERROR, VERSION: " + SERVER_VERSION);
-						world.getUtil().Log("MISMATCH! Client is version " + remoteVersion + " but we are version " + SERVER_VERSION + "! Closing the Server!");
+						util.Log("MISMATCH! Client is version " + remoteVersion + " but we are version " + SERVER_VERSION + "! Closing the Server!");
 					}
 				}catch(SocketTimeoutException s) {
 					System.out.println(username + " has timed out, and disconnected.");
 					break;
 				}catch(IOException e) {
-					world.getUtil().Log(username + " has disconnected.");
+					util.Log(username + " has disconnected.");
 					//e.printStackTrace();
 					break;
 				}

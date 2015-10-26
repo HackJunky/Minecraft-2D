@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.awt.Point;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -13,6 +14,9 @@ public class Packet implements Serializable{
 	private ArrayList<Entity> entities;
 	private Player player;
 	private ArrayList<Modification> changes;
+
+	private Color skyColor;
+	private Color worldLight;
 	
 	public Packet(boolean state) {
 		this.state = state;
@@ -44,6 +48,22 @@ public class Packet implements Serializable{
 	
 	public boolean getState() {
 		return state;
+	}
+	
+	public Color getSkyColor() {
+		return skyColor;
+	}
+
+	public void setSkyColor(Color skyColor) {
+		this.skyColor = skyColor;
+	}
+
+	public Color getWorldLight() {
+		return worldLight;
+	}
+
+	public void setWorldLight(Color worldLight) {
+		this.worldLight = worldLight;
 	}
 	
 	public class Modification implements Serializable{
