@@ -125,6 +125,8 @@ public class Game extends JPanel {
 		new Thread(new Renderer()).start();
 		this.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 		this.setVisible(true);
+		
+		ui.callback();
 	}
 
 	public void loadImages() {

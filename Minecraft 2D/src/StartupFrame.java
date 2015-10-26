@@ -61,7 +61,7 @@ public class StartupFrame extends JFrame {
 	private JTextField txtWorldHeight;
 
 	private JToggleButton btnAutoJoin;
-	
+
 	private JButton btnConnect;
 
 	private boolean callback = false;
@@ -187,10 +187,10 @@ public class StartupFrame extends JFrame {
 		txtWorldHeight.setText("4");
 		pnlHost.add(txtWorldHeight, "cell 1 3");
 		txtWorldHeight.setColumns(10);
-		
+
 		JLabel lblPort = new JLabel("Port:");
 		pnlHost.add(lblPort, "cell 0 4,alignx trailing");
-		
+
 		txtPortServer = new JTextField();
 		txtPortServer.setText("7767");
 		pnlHost.add(txtPortServer, "flowx,cell 1 4,growx");
@@ -248,10 +248,10 @@ public class StartupFrame extends JFrame {
 
 		panel.add(pnlHost, "cell 0 1 4 1,grow");
 		//panel.add(pnlConnect, "cell 0 1 4 1,grow");
-		
+
 		Component horizontalStrut_3 = Box.createHorizontalStrut(96);
 		pnlHost.add(horizontalStrut_3, "cell 1 4");
-		
+
 
 		JLabel lblGuiScale = new JLabel("GUI Scale (2 - 64):");
 		pnlConnect.add(lblGuiScale, "cell 0 0,alignx trailing");
@@ -267,18 +267,18 @@ public class StartupFrame extends JFrame {
 
 		JRadioButton rdbtnNewRadioButton = new JRadioButton("Spectate Only");
 		pnlConnect.add(rdbtnNewRadioButton, "cell 2 1,alignx left,aligny top");
-		
-				JLabel lblServerIp = new JLabel("Server IP:");
-				pnlConnect.add(lblServerIp, "cell 0 2,alignx trailing");
-		
-				txtServerIP = new JTextField();
-				txtServerIP.setText("127.0.0.1");
-				pnlConnect.add(txtServerIP, "cell 1 2,growx");
-				txtServerIP.setColumns(10);
-		
+
+		JLabel lblServerIp = new JLabel("Server IP:");
+		pnlConnect.add(lblServerIp, "cell 0 2,alignx trailing");
+
+		txtServerIP = new JTextField();
+		txtServerIP.setText("127.0.0.1");
+		pnlConnect.add(txtServerIP, "cell 1 2,growx");
+		txtServerIP.setColumns(10);
+
 		JLabel lblServerPort = new JLabel("Server Port:");
 		pnlConnect.add(lblServerPort, "flowx,cell 0 3,alignx trailing");
-		
+
 		txtPort = new JTextField();
 		txtPort.setText("7767");
 		pnlConnect.add(txtPort, "flowx,cell 1 3,growx");
@@ -301,7 +301,7 @@ public class StartupFrame extends JFrame {
 
 		Component horizontalStrut_1 = Box.createHorizontalStrut(48);
 		pnlConnect.add(horizontalStrut_1, "cell 1 0");
-		
+
 		Component horizontalStrut_2 = Box.createHorizontalStrut(64);
 		pnlConnect.add(horizontalStrut_2, "cell 1 3");
 
@@ -343,7 +343,7 @@ public class StartupFrame extends JFrame {
 			callback = true;
 		}
 	}
-	
+
 	public void OnClientCallback(String error) {
 		this.setVisible(true);
 		JOptionPane.showMessageDialog(this, error);
