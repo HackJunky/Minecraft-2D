@@ -2,13 +2,19 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+
 import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 
 import javax.swing.JButton;
+
 import java.awt.Font;
+
 import javax.swing.JTextField;
+
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,7 +24,9 @@ import java.io.File;
 import java.util.Random;
 
 import javax.swing.Box;
+
 import net.miginfocom.swing.MigLayout;
+
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.BevelBorder;
 import javax.swing.JRadioButton;
@@ -60,13 +68,29 @@ public class StartupFrame extends JFrame {
 	private JTextField textField;
 	private JTextField txtPort;
 	private JTextField txtPortServer;
+	private JLabel lblServerPassword_1;
+	private JPasswordField passwordField;
 
 	public static void main(String[] args) {
+		
 		new StartupFrame();
 	}
 
 	public StartupFrame() {
 		util = new Util();
+
+		try {
+			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+			UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
+		}catch (UnsupportedLookAndFeelException e) {
+			e.printStackTrace();
+		}catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}catch (InstantiationException e) {
+			e.printStackTrace();
+		}catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -86,7 +110,7 @@ public class StartupFrame extends JFrame {
 		this.repaint();
 
 		this.setLocation(Toolkit.getDefaultToolkit().getScreenSize().width / 2 - 320, Toolkit.getDefaultToolkit().getScreenSize().height / 2 - 240);
-		this.setSize(500, 280);
+		this.setSize(610, 380);
 		getContentPane().setLayout(new MigLayout("", "[grow]", "[][4px:n:4px][grow]"));
 
 		JLabel lblWelcomeToMinecraft = new JLabel("Welcome to Minecraft 2D, configure the options below to begin!");
@@ -145,6 +169,12 @@ public class StartupFrame extends JFrame {
 
 		btnAutoJoin = new JToggleButton("Auto-Join Server");
 		pnlHost.add(btnAutoJoin, "cell 2 0 2 1,alignx right");
+		
+		lblServerPassword_1 = new JLabel("Server Password:");
+		pnlHost.add(lblServerPassword_1, "cell 0 1,alignx trailing");
+		
+		passwordField = new JPasswordField();
+		pnlHost.add(passwordField, "cell 1 1,growx");
 
 		JLabel lblWorldChunks = new JLabel("Chunk Dimensions (W x H):");
 		pnlHost.add(lblWorldChunks, "cell 0 2,alignx trailing");
@@ -198,7 +228,10 @@ public class StartupFrame extends JFrame {
 						Integer.parseInt(txtChunkWidth.getText()),
 						Integer.parseInt(txtChunkHeight.getText()),
 						Integer.parseInt(txtWorldWidth.getText()),
-						Integer.parseInt(txtWorldHeight.getText()));
+						Integer.parseInt(txtWorldHeight.getText()),
+						24,
+						24,
+						new String(passwordField.getPassword()));
 				if (btnShowConsole.isSelected()) {
 					new Console(util);
 				}
@@ -284,7 +317,7 @@ public class StartupFrame extends JFrame {
 		btnConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				btnConnect.setEnabled(false);
-				new Client(txtServerIP.getText(), Integer.parseInt(txtPort.getText()), util, txtAlias.getText(), StartupFrame.this);
+				new Client(txtServerIP.getText(), Integer.parseInt(txtPort.getText()), util, txtAlias.getText(), new String(txtServerPassword.getPassword()), StartupFrame.this);
 			}
 		});
 		pnlConnect.add(btnConnect, "cell 2 4,alignx right");
@@ -328,7 +361,7 @@ public class StartupFrame extends JFrame {
 	public void OnServerCallback() {
 		if (!callback) {
 			if (btnAutoJoin.isSelected()) {
-				new Client("127.0.0.1", Integer.parseInt(txtPortServer.getText()), util, txtAlias.getText(), this);
+				new Client("127.0.0.1", Integer.parseInt(txtPortServer.getText()), util, txtAlias.getText(), new String(txtServerPassword.getPassword()), this);
 			}
 			callback = true;
 		}

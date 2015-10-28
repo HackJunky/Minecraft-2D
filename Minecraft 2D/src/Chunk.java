@@ -29,6 +29,8 @@ public class Chunk implements Serializable{
 
 	private boolean generated;
 	private int generationStage;
+	
+	private Point spawnPoint;
 
 	private String CHUNK_ID;
 
@@ -261,6 +263,9 @@ public class Chunk implements Serializable{
 					for (int y = bottom; y <= top; y++) {
 						if (y == top) {
 							data[x][y] = new Block(Block.BlockID.Grass);
+							if (x == data.length / 2) {
+								spawnPoint = new Point(x, y + 1);
+							}
 							float f = rand.nextFloat();
 							if (rand.nextBoolean()) {
 								if (f < Block.BlockID.Rose.getSpawnChance()) {
@@ -305,6 +310,10 @@ public class Chunk implements Serializable{
 
 	public String getID() {
 		return CHUNK_ID;
+	}
+	
+	public Point getSpawnPoint() {
+		return spawnPoint;
 	}
 
 }

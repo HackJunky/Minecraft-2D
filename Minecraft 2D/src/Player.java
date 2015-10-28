@@ -15,9 +15,13 @@ public class Player extends Entity implements Serializable {
 	private double xp = 50;
 	private double food = 10;
 	
-	public Player(String name, Point dimensions) {
-		super(new Point(0, 0), dimensions);
+	private Item[] hotbar;
+	private Item[] inventory;
+	
+	public Player(Point blockSize, Point location, String name) {
+		super(blockSize, location, new Point(blockSize.x, 2 * blockSize.y));
 		this.name = name;
+		direction = 0;
 	}
 	
 	public void setDirection(int d) {
@@ -29,13 +33,14 @@ public class Player extends Entity implements Serializable {
 	}
 	
 	public void teleport(Point block) {
-		this.setPosition(block);
+		this.setBlockPosition(block);
 	}
 
 	@Override
-	public void tick() {
+	public void entityTick() {
 		
 	}
+	
 	public int getDirection() {
 		return direction;
 	}
@@ -55,5 +60,13 @@ public class Player extends Entity implements Serializable {
 	public double getFood() {
 		return food;
 	}
-
+	
+	public Item[] getHotbar() {
+		return hotbar;
+	}
+	
+	public Item[] getInventory() {
+		return inventory;
+	}
+	
 }

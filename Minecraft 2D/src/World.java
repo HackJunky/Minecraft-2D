@@ -24,13 +24,16 @@ public class World implements Serializable {
 	private Color sunsetColor = new Color(180, 160, 130, 255);
 	private Color sunriseColor = new Color(230, 190, 138, 255);
 	private Color dayColor = new Color(140, 200, 240, 255);
-	private Color nightColor = new Color(50, 80, 60, 255);
+	private Color nightColor = new Color(35, 45, 65, 255);
 	private float worldTime = 0.5f;
 
 	private long lastTime = 0;
 	private boolean generated;
 	long startTime;
 	int[] topography;
+
+	private Point spawnChunk;
+	private Point spawnPoint;
 
 	boolean isServer = true;
 
@@ -45,8 +48,6 @@ public class World implements Serializable {
 		this.util = util;
 
 		startTime = System.currentTimeMillis();
-
-		util.Log("Generating terrain..");
 	}
 
 	public void update() {
@@ -59,11 +60,12 @@ public class World implements Serializable {
 			}
 			if (!generated) {
 				skyColor = nightColor;
-				entities = new ArrayList<Entity>();
 				generateTerrain();
 			}else {
-				for (Entity e : entities) {
-					e.tick();
+				if (entities != null) {
+					for (Entity e : entities) {
+						e.tick();
+					}
 				}
 			}
 			calculateTime();
@@ -96,7 +98,7 @@ public class World implements Serializable {
 				skyColor = colorLerp(skyColor, dayColor, deltaTime);
 			}
 		}
-		worldOverlayColor = new Color(0, 0, 0,(int)(185 * Math.abs(worldTime)));
+		worldOverlayColor = new Color(0, 0, 0, 235 - (int)(230 * worldTime));
 	}
 
 	public float floatLerp(float start, float end, float deltaTime) {
@@ -138,7 +140,7 @@ public class World implements Serializable {
 		return output;
 	}
 
-	synchronized public void applyChanges(ArrayList<Packet.Modification> mods) {
+	public void applyChanges(ArrayList<Packet.Modification> mods) {
 		for (int i = 0; i < mods.size(); i++) {
 			Packet.Modification mod = mods.get(i);
 			setBlock(mod.getPoint(), mod.getBlock());
@@ -174,8 +176,11 @@ public class World implements Serializable {
 		int currentChunks = 0;
 		if (world == null) {
 			world = new Chunk[WORLD_WIDTH][WORLD_HEIGHT];
+
+			util.Log("Generating terrain..");
 		}
 		int oceanLevel = ((WORLD_HEIGHT / 2) * CHUNK_HEIGHT) + (CHUNK_HEIGHT / 2);
+
 		for (int y = 0; y < world[0].length; y++) {
 			int startY = y * CHUNK_HEIGHT;
 			int endY = startY + CHUNK_HEIGHT;
@@ -202,12 +207,19 @@ public class World implements Serializable {
 			for (int y = 0; y < world[0].length; y++) {
 				world[x][y].tick();
 				if (world[x][y].isGenerated()) {
+					if (x == (world.length / 2)) {
+						if (world[x][y].getSpawnPoint() != null) {
+							spawnPoint = world[x][y].getSpawnPoint();
+							spawnChunk = new Point(x, y);
+						}
+					}
 					currentChunks++;
 				}
 			}
 		}
 		if (totalChunks == currentChunks) {
 			generated = true;
+
 			util.Log((WORLD_WIDTH * CHUNK_WIDTH) + "x" + (WORLD_HEIGHT * CHUNK_HEIGHT) + " terrain built in " + (System.currentTimeMillis() - startTime) + "ms.");
 		}
 	}
@@ -250,6 +262,10 @@ public class World implements Serializable {
 		return output;
 	}
 
+	public Point getSpawnLocation() {
+		return new Point((spawnChunk.x * CHUNK_WIDTH) + spawnPoint.x, (spawnChunk.y * CHUNK_WIDTH) + spawnPoint.y);
+	}
+
 	public boolean isGenerated() {
 		return generated;
 	}
@@ -274,13 +290,27 @@ public class World implements Serializable {
 	public void setSkyColor(Color c) {
 		skyColor = c;
 	}
-	
+
 	public void setEntities(ArrayList<Entity> entities) {
 		this.entities = entities;
 	}
 
 	public ArrayList<Entity> getEntities() {
 		return entities;
+	}
+
+	public void registerEntity(Entity e) {
+		if (entities == null) {
+			entities = new ArrayList<Entity>();
+			util.Log("Creating entity registry.");
+		}
+		util.Log("Applying register for entity " + e.getID());
+		entities.add(e);
+	}
+	
+	public void unregisterEntity(Entity e) {
+		util.Log("Deactivating register for entity " + e.getID());
+		entities.remove(e);
 	}
 
 	public Util getUtil() {
@@ -290,19 +320,19 @@ public class World implements Serializable {
 	public int getWorldWidth() {
 		return WORLD_WIDTH;
 	}
-	
+
 	public int getWorldHeight() {
 		return WORLD_HEIGHT;
 	}
-	
+
 	public int getChunkWidth() {
 		return CHUNK_WIDTH;
 	}
-	
+
 	public int getChunkHeight() {
 		return CHUNK_HEIGHT;
 	}
-	
+
 	public int getHeight() {
 		return CHUNK_HEIGHT * WORLD_HEIGHT;
 	}
@@ -314,7 +344,7 @@ public class World implements Serializable {
 	public Color getLight() {
 		return worldOverlayColor;
 	}
-	
+
 	public void setLight(Color c) {
 		worldOverlayColor = c;
 	}

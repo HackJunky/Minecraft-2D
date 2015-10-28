@@ -1,7 +1,5 @@
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,11 +9,6 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import javax.swing.JOptionPane;
-
 
 public class Client {
 	private static final int CLIENT_VERSION = 1;
@@ -31,17 +24,22 @@ public class Client {
 	private UI ui;
 	private StartupFrame callback;
 
+	private String password;
 	
-	public Client(String IP, int port, Util u, String username, StartupFrame callback) {
+	private int BLOCK_WIDTH;
+	private int BLOCK_HEIGHT;
+
+	public Client(String IP, int port, Util u, String username, String password, StartupFrame callback) {
 		SERVER_PORT = port;
 		SERVER_IP = IP;
 		util = u;
-		
+
+		this.password = password;
+
 		this.callback = callback;
-		
+
 		authenticate(username);
 	}
-
 
 	public void authenticate(String username) {
 		if (networkClient != null) {
@@ -52,7 +50,7 @@ public class Client {
 		util.Log("Authenticating '" + username + "' with the remote server... (this process may hang)");
 		networkClient.start();
 	}
-	
+
 	public World getWorld() {
 		return world;
 	}
@@ -70,7 +68,6 @@ public class Client {
 		DataOutputStream out;
 
 		int QUERY_ID = 0;
-
 
 		public NetworkLayer(String user) {
 			username = user.toLowerCase();
@@ -119,6 +116,7 @@ public class Client {
 					if (ident.equals("$IDENTIFY")) {
 						String identification = "$IDENTIFY " + username;
 						out.writeUTF(identification);
+						out.writeUTF("$PASSWORD " + password);
 
 						String ret = in.readUTF();
 						if (ret.equals("$VALID")) {
@@ -129,32 +127,41 @@ public class Client {
 
 							ui = new UI(Client.this);
 							ui.getGame().setName(username);
-							
+
 							while (true) {
 								try {
 									if (firstTick) {
 										Payload payload = (Payload)ois.readObject();
 										world = new World(false, payload.getWorldWidth(), payload.getWorldHeight(), payload.getChunkWidth(), payload.getChunkHeight(), util);
 										world.setChunkData(payload.getData());
-										util.Log("Welcome to the server!");
+										ui.getGame().BLOCK_WIDTH = payload.getBlockWidth();
+										ui.getGame().BLOCK_HEIGHT = payload.getBlockHeight();
+										ui.getGame().player = payload.getPlayer();
+										ui.getGame().setViewTarget(ui.getGame().player);
 										ui.getGame().initialize();
 										firstTick = false;
-										oos.writeObject(ui.getGame().player);
-									}else {
-										Packet incoming = (Packet)ois.readObject();
-										world.setGenerated(incoming.getState());
-										world.setEntities(incoming.getEntities());
-										world.applyChanges(incoming.getChanges());
-										world.setLight(incoming.getWorldLight());
-										world.setSkyColor(incoming.getSkyColor());
-										Packet outgoing = new Packet(incoming.getState());
-										outgoing.setChanges(ui.getGame().getChanges());
-										oos.writeObject(outgoing);
+
+										util.Log("Welcome to the server!");
+										
+										oos.writeByte(1);
 										oos.flush();
 									}
+									
+									Packet incoming = (Packet)ois.readObject();
+									world.setGenerated(incoming.getState());
+									world.setEntities(incoming.getEntities());
+									world.applyChanges(incoming.getChanges());
+									world.setLight(incoming.getWorldLight());
+									world.setSkyColor(incoming.getSkyColor());
+
+									Packet outgoing = new Packet(true);
+									outgoing.setChanges(ui.getGame().getChanges());
+									oos.writeObject(outgoing);
+									oos.flush();
 								}catch (Exception e) {
 									util.Log("Disconnect: Error.");
 									e.printStackTrace();
+									callback.OnClientCallback("You have been disconnected from the server.");
 									break;
 								}
 							}
@@ -185,5 +192,4 @@ public class Client {
 			}
 		}
 	}
-
 }

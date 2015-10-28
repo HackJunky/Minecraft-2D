@@ -1,10 +1,9 @@
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,41 +25,54 @@ public class Server {
 
 	private Thread heartbeat;
 
-	private static int NETWORK_MAX_CONNECTIONS = 16;
-	private static int NETWORK_PORT = 7767;
+	private int NETWORK_MAX_CONNECTIONS = 16;
+	private int NETWORK_PORT = 7767;
 	private static int SERVER_VERSION = 1;
+
+	private int BLOCK_WIDTH;
+	private int BLOCK_HEIGHT;
+	
+	private String password;
 
 	private World world;
 	private Util util;
-	
+	private Database database;
+
 	private boolean postINIT = false;
-	
+
 	private StartupFrame callback;
 
 	enum ThreadNames {
 		Bashful, Doc, Dopey, Grumpy, Happy, Sleepy, Sneezy
 	}
 
-	public Server(Util u, StartupFrame callback, int port, int maxPlayers, int CHUNK_WIDTH, int CHUNK_HEIGHT, int WORLD_WIDTH, int WORLD_HEIGHT) {
+	public Server(Util u, StartupFrame callback, int port, int maxPlayers, int CHUNK_WIDTH, int CHUNK_HEIGHT, int WORLD_WIDTH, int WORLD_HEIGHT, int BLOCK_WIDTH, int BLOCK_HEIGHT, String password) {
 		NETWORK_PORT = port;
 		NETWORK_MAX_CONNECTIONS = maxPlayers;
 		
+		this.BLOCK_WIDTH = BLOCK_WIDTH;
+		this.BLOCK_HEIGHT = BLOCK_HEIGHT;
+
+		this.password = password;
+
 		netMaster = new NetworkMaster();
 		world = new World(true, WORLD_WIDTH, WORLD_HEIGHT, CHUNK_WIDTH, CHUNK_HEIGHT, u);
 
+		database = new Database(u);
+
 		this.callback = callback;
-		
+
 		util = u;	
-		
+
 		util.Log("Initializing server...");
-		
+
 		heartbeat = new Thread(new Heartbeat());
 		heartbeat.start();
 	}
-	
+
 	public void OnWorldComplete() {
 		postINIT = true;
-		
+
 		netMasterThread = new Thread(netMaster);
 		netMasterThread.start();
 
@@ -97,8 +109,8 @@ public class Server {
 		Socket socket;
 
 		public NetworkMaster() {
-			networkThreads = new Thread[Server.NETWORK_MAX_CONNECTIONS];
-			networkSockets = new NetworkSocket[Server.NETWORK_MAX_CONNECTIONS];
+			networkThreads = new Thread[NETWORK_MAX_CONNECTIONS];
+			networkSockets = new NetworkSocket[NETWORK_MAX_CONNECTIONS];
 		}
 
 		public void run() {
@@ -111,9 +123,9 @@ public class Server {
 
 				while (true) {
 					util.Log("Awaiting connections on Port " + serverSocket.getLocalPort() + "...");
-					
+
 					callback.OnServerCallback();
-					
+
 					socket = serverSocket.accept();
 
 					util.Log("Connection requested from " + socket.getRemoteSocketAddress() + "... Delegating thread.");
@@ -199,7 +211,7 @@ public class Server {
 						sleepTime += FRAME_PERIOD;	
 						framesSkipped++;
 					}
-					
+
 					if (!postINIT && world.isGenerated()) {
 						OnWorldComplete();
 					}
@@ -209,7 +221,7 @@ public class Server {
 			}
 		}
 	}
-	
+
 	public void queueModifications(ArrayList<Packet.Modification> mods) {
 		for (NetworkSocket s : netMaster.networkSockets) {
 			if (s != null && s.active) {
@@ -224,12 +236,10 @@ public class Server {
 		private String name;
 		private Socket server;
 		private boolean active;
-		private String remoteName;
-
 		private String username;
-
-		private String rank = "user";
 		
+		private Player remotePlayer;
+
 		private ArrayList<Packet.Modification> modQueue;
 
 		public NetworkSocket(Socket socket, String threadName) {
@@ -237,7 +247,7 @@ public class Server {
 
 			name = threadName;
 			server = socket;
-			
+
 			modQueue = new ArrayList<Packet.Modification>();
 		}
 
@@ -273,8 +283,6 @@ public class Server {
 
 					if (remoteVersion.equals(String.valueOf(SERVER_VERSION))) {
 						if (remoteIP.equals(server.getRemoteSocketAddress().toString())) {
-							this.remoteName = remoteName;
-
 							Random rand = new Random();
 
 							String message = "CALLSIGN ";
@@ -300,7 +308,18 @@ public class Server {
 										username = identification.substring("$IDENTIFY ".length(), identification.length());
 										out.writeUTF("$VALID");
 										util.Log("Sending world data...");
-										verified = true;
+
+										String passphrase = in.readUTF();
+										String pass = passphrase.substring("$PASSWORD ".length(), passphrase.length());
+										if (password.length() > 0) {
+											if (pass.equals(password)) {
+												verified = true;
+												util.Log("Password is correct, proceeding with authentication.");
+											}
+										}else {
+											util.Log("Password is not required for this server, skipping authentication...");
+											verified = true;
+										}
 									}
 								}
 
@@ -311,25 +330,27 @@ public class Server {
 									while (!done) {
 										try {
 											if (firstTick) {
-												oos.writeObject(new Payload(world.getChunkData(), world.getWorldWidth(), world.getWorldHeight(), world.getChunkWidth(), world.getChunkHeight()));
+												oos.writeObject(new Payload(world.getChunkData(), world.getWorldWidth(), world.getWorldHeight(), world.getChunkWidth(), world.getChunkHeight(), BLOCK_WIDTH, BLOCK_HEIGHT, remotePlayer = new Player(new Point(BLOCK_WIDTH, BLOCK_HEIGHT), world.getSpawnLocation(), username)));
+												world.registerEntity(remotePlayer);
 												oos.flush();
-												util.Log("Welcome, " + username + "! Awaiting next connection...");
 												firstTick = false;
-												world.getEntities().add((Player)ois.readObject());
-											}else {
-												Packet outgoing = new Packet(world.isGenerated());
-												outgoing.setChanges(modQueue);
-												modQueue.clear();
-												outgoing.setEntities(world.getEntities());
-												outgoing.setSkyColor(world.getSkyColor());
-												outgoing.setWorldLight(world.getLight());
-												oos.writeObject(outgoing);
-												oos.flush();
-												Packet incoming = (Packet)ois.readObject();
-												world.setGenerated(incoming.getState());
-												world.applyChanges(incoming.getChanges());
-												queueModifications(incoming.getChanges());
+												util.Log("Welcome, " + username + "! Awaiting next connection...");
+												
+												ois.readByte();
 											}
+											Packet outgoing = new Packet(world.isGenerated());
+											outgoing.setChanges(modQueue);
+											modQueue.clear();
+											outgoing.setEntities(world.getEntities());
+											outgoing.setSkyColor(world.getSkyColor());
+											outgoing.setWorldLight(world.getLight());
+											oos.writeObject(outgoing);
+											oos.flush();
+													
+											Packet incoming = (Packet)ois.readObject();
+											remotePlayer = incoming.getPlayer();
+//											world.applyChanges(incoming.getChanges());
+//											queueModifications(incoming.getChanges());
 										}catch (Exception e) {
 											util.Log(username + " disconnected: Error.");
 											break;
@@ -360,6 +381,7 @@ public class Server {
 				}
 
 				try {
+					world.unregisterEntity(remotePlayer);
 					oos.close();
 					in.close();
 					out.close();
@@ -381,5 +403,6 @@ public class Server {
 			}
 			return output;
 		}
+
 	}
 }
